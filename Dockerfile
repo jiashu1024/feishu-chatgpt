@@ -4,6 +4,8 @@ FROM maven:3.9.2-amazoncorretto-8
 # 设置工作目录
 WORKDIR /app
 
+RUN apt update && apt install git -y
+
 # 克隆项目
 RUN git clone https://github.com/1130600015/feishu-chatgpt.git .
 
