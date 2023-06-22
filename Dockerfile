@@ -5,7 +5,7 @@ FROM maven:3.6.3-jdk-8
 WORKDIR /app
 
 # 克隆项目
-RUN git clone https://gitee.com/jia_shu_Gitee/feishubot.git .
+RUN git clone https://github.com/1130600015/feishu-chatgpt.git .
 
 # Maven 打包，跳过测试
 RUN mvn package -DskipTests
