@@ -78,9 +78,13 @@ public class ChatService {
             log.error("账号{}登录失败：{}", account, jsonObject.opt("errorMessage"));
             return false;
         }
-        accessToken = "Bearer " + jsonObject.optString("accessToken");
+        accessToken = jsonObject.optString("accessToken");
         log.info("账号{}登录成功", account);
         return true;
+    }
+
+    public String getToken() {
+        return "Bearer " + accessToken;
     }
 
     private void chat(String content, String model, AnswerProcess process, String parentMessageId, String conversationId) throws InterruptedException {
@@ -107,14 +111,14 @@ public class ChatService {
 
     public void genTitle(String conversationId) {
         String listUrl = proxyUrl + GEN_TITLE_URL + conversationId;
-        HttpResponse response = HttpRequest.get(listUrl).header("Authorization", accessToken).execute();
+        HttpResponse response = HttpRequest.get(listUrl).header("Authorization", getToken()).execute();
         log.info(response.body());
     }
 
 
     public void getConversationList() {
         String listUrl = proxyUrl + LIST_URL;
-        HttpResponse response = HttpRequest.get(listUrl).header("Authorization", accessToken).execute();
+        HttpResponse response = HttpRequest.get(listUrl).header("Authorization", getToken()).execute();
         System.out.println(response.body());
     }
 
@@ -126,7 +130,7 @@ public class ChatService {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("Authorization", accessToken);
+            connection.setRequestProperty("Authorization", getToken());
             connection.setRequestProperty("Content-Type", "application/json");
             //设置请求体
             connection.setDoOutput(true);

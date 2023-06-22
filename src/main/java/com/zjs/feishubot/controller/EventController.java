@@ -1,5 +1,6 @@
 package com.zjs.feishubot.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.lark.oapi.core.utils.Jsons;
 import com.lark.oapi.event.EventDispatcher;
 import com.lark.oapi.sdk.servlet.ext.ServletAdapter;
@@ -9,12 +10,14 @@ import com.lark.oapi.service.im.v1.ImService;
 import com.lark.oapi.service.im.v1.model.P1MessageReadV1;
 import com.lark.oapi.service.im.v1.model.P2MessageReadV1;
 import com.lark.oapi.service.im.v1.model.P2MessageReceiveV1;
+import com.zjs.feishubot.entity.Conversation;
 import com.zjs.feishubot.handler.MessageHandler;
+import com.zjs.feishubot.util.chatgpt.ConversationPool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -87,5 +90,41 @@ public class EventController {
                     }
                 })
                 .build();
+    }
+
+    protected final ConversationPool conversationPool;
+
+    @PostMapping("/cardEvent")
+    @ResponseBody
+    public String event(@RequestBody String body) {
+        JSONObject payload = new JSONObject(body);
+        if (payload.opt("challenge") != null) {
+            JSONObject res = new JSONObject();
+            res.put("challenge", payload.get("challenge"));
+            return res.toString();
+        }
+
+        String chatId = String.valueOf(payload.get("open_chat_id"));
+
+        JSONObject action = (JSONObject) payload.get("action");
+        String option = (String) action.get("option");
+
+        Conversation bean = JSONUtil.toBean(option, Conversation.class);
+
+        if (bean.getParentMessageId() == null) {
+            bean.setParentMessageId("");
+        }
+        if (bean.getConversationId() == null) {
+            bean.setConversationId("");
+        }
+        bean.setChatId(chatId);
+        conversationPool.addConversation(chatId, bean);
+        return "";
+    }
+
+    @GetMapping("/ping")
+    @ResponseBody
+    public String ping() {
+       return "pong";
     }
 }
