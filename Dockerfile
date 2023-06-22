@@ -1,5 +1,5 @@
 # 基于 Java 8 和 Maven 的镜像
-FROM maven:3.6.3-jdk-8
+FROM maven:3.9.2-amazoncorretto-8
 
 # 设置工作目录
 WORKDIR /app
