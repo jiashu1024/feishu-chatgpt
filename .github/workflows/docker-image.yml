@@ -3,6 +3,8 @@ name: build_docker
 on:
   push:
     branches: [main]
+  release:
+    types: [created] # 表示在创建新的 Release 时触发
 
 jobs:
   build_docker:
@@ -31,4 +33,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
+            zhangjiashu/feishubot:${{ github.ref_name }}
             zhangjiashu/feishubot:latest
