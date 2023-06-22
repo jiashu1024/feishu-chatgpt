@@ -1,0 +1,39 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+.idea
+.mvn/
+application.yaml
+accounts.yaml
+
+mvnw.cmd
+mvnw
+
+logs
+
+# 忽略 target 目录
+target/*
+
+# 不忽略 target 目录下的 JAR 文件
+*.iml
+.DS_Store
+
+# Package Files #
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*

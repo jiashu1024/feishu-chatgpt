@@ -1,0 +1,16 @@
+server:
+  port: 9001
+
+feishu:
+  appId:
+  appSecret:
+  encryptKey:
+  verificationToken:
+
+proxy:
+  url: http://rnproxy.zhangjiashu.tech
+
+
+
+
+

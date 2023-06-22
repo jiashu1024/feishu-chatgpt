@@ -1,0 +1,18 @@
+!!com.zjs.feishubot.entity.AccountList
+accounts:
+- account:
+  level: 3   #3 普通账号，4 plus账号
+  password:
+  token:
+- account:
+  level: 3
+  password:
+  token:
+- account:
+  level: 3
+  password:
+  token:
+- account:
+  level: 3
+  password:
+  token:
