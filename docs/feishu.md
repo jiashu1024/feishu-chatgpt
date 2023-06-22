@@ -30,8 +30,8 @@
 启动项目，项目根目录下运行
 
 ```shell
-chmod +x start.sh
-sudo ./start.sh
+chmod +x start-docker.sh
+sudo ./start-docker.sh
 
 #查看日志
 sudo docker logs -f feishubot

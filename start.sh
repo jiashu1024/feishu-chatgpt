@@ -1,23 +1,15 @@
 #!/bin/bash
+for pid in $(ps -ef | grep 'FeiShuBot' | awk '{print $2}'); do
+  kill -9 $pid
+done
 
-##停止并删除现有的feishubot容器
+mvn clean package -DskipTests
 
-if docker ps -a --format '{{.Names}}' | grep -q "^feishubot$"; then
-    docker stop feishubot
-    docker rm feishubot
-fi
+cp target/*.jar .
 
-##拉取最新的feishubot镜像
-
-docker pull zhangjiashu/feishubot
+jar_file=$(ls *.jar)
 
 mv accounts-sample.yaml accounts.yaml
 mv application-sample.yaml application.yaml
 
-##启动新的feishubot容器
-
-docker run -d \
---name feishubot \
--p 9001:9001 \
--v ./accounts.yaml:/app/accounts.yaml \
--v ./application.yaml:/app/application.yaml zhangjiashu/feishubot
+nohup java -jar $jar_file > bot.log 2>&1 &

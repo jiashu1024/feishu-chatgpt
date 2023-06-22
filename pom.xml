@@ -10,7 +10,6 @@
     </parent>
     <groupId>com.zjs</groupId>
     <artifactId>FeiShuBot</artifactId>
-    <version>1.0.0</version>
     <name>FeiShuBot</name>
     <description>FeiShuBot</description>
     <properties>
