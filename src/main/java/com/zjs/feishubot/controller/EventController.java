@@ -34,13 +34,14 @@ public class EventController {
 
     @Value("${feishu.encryptKey}")
     private String encryptionKey;
-    //1. 注册消息处理器
+
     private EventDispatcher EVENT_DISPATCHER;
 
-    //2. 注入 ServletAdapter 实例
+    protected final ConversationPool conversationPool;
+
     protected final ServletAdapter servletAdapter;
 
-    //3. 创建路由处理器
+    //处理事件回调
     @RequestMapping("/chatEvent")
     public void event(HttpServletRequest request, HttpServletResponse response)
             throws Throwable {
@@ -48,9 +49,49 @@ public class EventController {
             init();
         }
 
-        //3.1 回调扩展包提供的事件回调处理器
         servletAdapter.handleEvent(request, response, EVENT_DISPATCHER);
     }
+
+
+    /**
+     * 处理消息卡片事件回调
+     * @param body
+     * @return
+     */
+    @PostMapping("/cardEvent")
+    @ResponseBody
+    public String event(@RequestBody String body) {
+        JSONObject payload = new JSONObject(body);
+        if (payload.opt("challenge") != null) {
+            JSONObject res = new JSONObject();
+            res.put("challenge", payload.get("challenge"));
+            return res.toString();
+        }
+
+        String chatId = String.valueOf(payload.get("open_chat_id"));
+
+        JSONObject action = (JSONObject) payload.get("action");
+        String option = (String) action.get("option");
+
+        Conversation bean = JSONUtil.toBean(option, Conversation.class);
+
+        if (bean.getParentMessageId() == null) {
+            bean.setParentMessageId("");
+        }
+        if (bean.getConversationId() == null) {
+            bean.setConversationId("");
+        }
+        bean.setChatId(chatId);
+        conversationPool.addConversation(chatId, bean);
+        return "";
+    }
+
+    @GetMapping("/ping")
+    @ResponseBody
+    public String ping() {
+       return "pong";
+    }
+
 
     private void init() {
         EVENT_DISPATCHER = EventDispatcher.newBuilder(verificationToken,
@@ -90,41 +131,5 @@ public class EventController {
                     }
                 })
                 .build();
-    }
-
-    protected final ConversationPool conversationPool;
-
-    @PostMapping("/cardEvent")
-    @ResponseBody
-    public String event(@RequestBody String body) {
-        JSONObject payload = new JSONObject(body);
-        if (payload.opt("challenge") != null) {
-            JSONObject res = new JSONObject();
-            res.put("challenge", payload.get("challenge"));
-            return res.toString();
-        }
-
-        String chatId = String.valueOf(payload.get("open_chat_id"));
-
-        JSONObject action = (JSONObject) payload.get("action");
-        String option = (String) action.get("option");
-
-        Conversation bean = JSONUtil.toBean(option, Conversation.class);
-
-        if (bean.getParentMessageId() == null) {
-            bean.setParentMessageId("");
-        }
-        if (bean.getConversationId() == null) {
-            bean.setConversationId("");
-        }
-        bean.setChatId(chatId);
-        conversationPool.addConversation(chatId, bean);
-        return "";
-    }
-
-    @GetMapping("/ping")
-    @ResponseBody
-    public String ping() {
-       return "pong";
     }
 }

@@ -36,17 +36,25 @@ public class MessageHandler {
     protected final MessageService messageService;
     protected final ConversationPool conversationPool;
 
+    /**
+     * 飞书推送事件会重复，用于去重
+     * @param event
+     * @return
+     */
     private boolean checkInvalidEvent(P2MessageReceiveV1 event) {
         String requestId = event.getRequestId();
+        // 根据内存记录的消息事件id去重
         if (RequestIdSet.requestIdSet.contains(requestId)) {
             log.warn("重复请求，requestId:{}", requestId);
             return false;
         }
         RequestIdSet.requestIdSet.add(requestId);
+
         String createTime = event.getEvent().getMessage().getCreateTime();
         Long createTimeLong = Long.valueOf(createTime);
         Long now = System.currentTimeMillis();
         if (now - createTimeLong > 1000 * 10) {
+            // 根据消息事件的创建时间去重
             log.warn("消息过期，requestId:{}", requestId);
             return false;
         }
@@ -59,6 +67,8 @@ public class MessageHandler {
 
         log.info("chatType:{},msgType:{}", chatType, msgType);
 
+
+        // 只处理私聊文本消息
         if (!chatType.equals("p2p") && !msgType.equals("text")) {
             log.warn("不支持的ChatType或MsgType,ChatGpt不处理");
             return false;
@@ -91,10 +101,9 @@ public class MessageHandler {
             return;
         }
         String chatId = message.getChatId();
-        //尝试从会话池中获取会话
+        //尝试从会话池中获取会话，从而保持上下文
         Conversation conversation = conversationPool.getConversation(chatId);
         Model model;
-
 
         String account = null;
         boolean newChat = false;
@@ -152,13 +161,9 @@ public class MessageHandler {
             chatService.newChat(text, model.value, answer -> {
                 processAnswer(answer, title, chatId, finalChatService, messageId, event, model, selections);
             });
-            //conversation = ConversationPool.getConversation(chatId);
-            // chatService.genTitle(conversation.conversationId);
+
         } else {
             log.info("继续会话");
-//            if (conversation.getStatus() == Status.RUNNING) {
-//                messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, "账号繁忙中,请稍等...", selections);
-//            }
             ChatService finalChatService1 = chatService;
             chatService.keepChat(text, model.value, conversation.parentMessageId, conversation.conversationId, answer -> {
                 String newTitle = model.key + " : " + finalChatService1.getAccount();
@@ -193,6 +198,7 @@ public class MessageHandler {
 
     private void processAnswer(Answer answer, String title, String chatId, ChatService chatService, String messageId, P2MessageReceiveV1 event, Model model, Map<String, String> selections) throws Exception {
         if (!answer.isSuccess()) {
+            // gpt请求失败
             selections.remove("使用当前上下文");
             if (answer.getErrorCode() == ErrorCode.INVALID_JWT || answer.getErrorCode() == ErrorCode.INVALID_API_KEY) {
 
@@ -225,11 +231,9 @@ public class MessageHandler {
         } else {
             chatService.setStatus(Status.FINISHED);
             conversation.setStatus(Status.FINISHED);
-            // log.info(answer.toString());
         }
 
         selections.put("使用当前上下文", JSONUtil.toJsonStr(conversation));
-
 
         String content = answer.getAnswer();
         if (content == null || content.equals("")) {
@@ -238,7 +242,7 @@ public class MessageHandler {
         PatchMessageResp resp1 = messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, content, selections);
 
         if (answer.isFinished() && resp1.getCode() == 230020) {
-            //log.warn("任务已完成，消息发送失败，正在重试");
+            //保证最后完整的gpt响应 不会被飞书消息频率限制
             while (answer.isFinished() && resp1.getCode() != 0) {
                 log.warn("重试中 code: {} msg: {}", resp1.getCode(), resp1.getMsg());
                 TimeUnit.MILLISECONDS.sleep(500);

@@ -15,6 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 账号池
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -33,6 +36,9 @@ public class AccountPool {
     public static Map<String, ChatService> plusPool = new HashMap<>();
 
 
+    /**
+     * 初始化账号池
+     */
     @PostConstruct
     public void init() {
         List<Account> accounts = accountService.getAccounts();
@@ -83,7 +89,7 @@ public class AccountPool {
     }
 
     public void modifyChatService(ChatService chatService) {
-        log.info("修改账号{}数据库信息", chatService.getAccount());
+        log.info("修改账号{}信息", chatService.getAccount());
         Account account = new Account();
         account.setAccount(chatService.getAccount());
         account.setToken(chatService.getAccessToken());

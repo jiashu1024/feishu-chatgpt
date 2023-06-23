@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+/**
+ * 操作account配置文件工具类
+ */
 public class AccountUtil {
     private static final String YAML_PATH = "accounts.yaml";
 

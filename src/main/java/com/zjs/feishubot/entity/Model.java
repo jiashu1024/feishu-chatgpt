@@ -11,10 +11,6 @@ public enum Model {
     public final String value;
 
 
-//    public static final String GPT_3_5 = "text-davinci-002-render-sha";
-//    public static final String PLUS_4_DEFAULT = "gpt-4";
-//    public static final String PLUS_GPT_4_BROWSING = "gpt-4-browsing";
-
     Model(String key, String value) {
         this.key = key;
         this.value = value;

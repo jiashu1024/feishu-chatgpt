@@ -75,4 +75,4 @@ sudo docker logs -f feishubot
 
 
 
-更新项目重新运行start.sh即可
+更新项目重新运行start-docker.sh即可

@@ -5,6 +5,9 @@ import org.json.JSONObject;
 
 import java.util.Map;
 
+/**
+ * 机器人回复消息卡片消息格式
+ */
 public class MessageCard {
     private static JSONObject gptAnswerMessageCard;
 
@@ -35,11 +38,15 @@ public class MessageCard {
         jsonMessage.put("config", config);
         jsonMessage.put("elements", new JSONArray().put(markdownElement).put(line));
 
-
         gptAnswerMessageCard = jsonMessage;
     }
 
-
+    /**
+     * 普通消息卡片格式
+     * @param title
+     * @param content
+     * @return
+     */
     public static String ofGptAnswerMessageCard(String title, String content) {
         if (gptAnswerMessageCard == null) {
             initChatGptAnswerMessageCard();
@@ -51,6 +58,13 @@ public class MessageCard {
         return gptAnswerMessageCard.toString();
     }
 
+    /**
+     * 带模型选择的消息卡片
+     * @param title
+     * @param content
+     * @param selections
+     * @return
+     */
     public static String ofGptAnswerMessageCardWithSelection(String title, String content, Map<String, String> selections) {
         if (hasSelection) {
             gptAnswerMessageCard = null;

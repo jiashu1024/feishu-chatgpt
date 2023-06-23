@@ -3,6 +3,9 @@ package com.zjs.feishubot.entity.gptRequestBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**
+ * 构造ChatGpt对话api请求体
+ */
 public class CreateConversationBody {
     public static String of(String messageId, String text, String parentMessageId, String conversationId, String model) {
         JSONObject body = new JSONObject();

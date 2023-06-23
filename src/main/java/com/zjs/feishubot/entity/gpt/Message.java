@@ -2,6 +2,9 @@ package com.zjs.feishubot.entity.gpt;
 
 import lombok.Data;
 
+/**
+ * gpt对话响应对象
+ */
 @Data
 public class Message {
     private String id;

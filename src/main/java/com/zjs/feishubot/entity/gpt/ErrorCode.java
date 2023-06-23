@@ -4,12 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ErrorCode {
+
     public static final int INVALID_JWT = 1;
     public static final int INVALID_API_KEY = 3;
 
+    /**
+     * 4.0  3小时25次的对话限制
+     */
     public static final int CHAT_LIMIT = 4;
 
-
+    /**
+     * 账号繁忙
+     */
     public static final int BUSY = 2;
 
     public static final Map<Integer, String> map = new HashMap<>();

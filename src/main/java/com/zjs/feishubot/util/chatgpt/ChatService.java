@@ -37,7 +37,6 @@ public class ChatService {
     private volatile Status status;
     private Semaphore semaphore = new Semaphore(1);
 
-
     private String proxyUrl;
 
     private static final String LOGIN_URL = "/chatgpt/login";
@@ -101,10 +100,26 @@ public class ChatService {
         }
     }
 
+    /**
+     * 新建会话
+     * @param content 对话内容
+     * @param model 模型
+     * @param process 回调
+     * @throws InterruptedException
+     */
     public void newChat(String content, String model, AnswerProcess process) throws InterruptedException {
         chat(content, model, process, "", "");
     }
 
+    /**
+     * 继续会话
+     * @param content 对话内容
+     * @param model 模型
+     * @param parentMessageId 父消息id
+     * @param conversationId 会话id
+     * @param process 回调
+     * @throws InterruptedException
+     */
     public void keepChat(String content, String model, String parentMessageId, String conversationId, AnswerProcess process) throws InterruptedException {
         chat(content, model, process, parentMessageId, conversationId);
     }
@@ -157,15 +172,13 @@ public class ChatService {
                     continue;
                 }
 
-                // log.info("{}", line);
-
                 try {
                     count++;
                     parse = parse(line);
                     if (parse == null) {
                         continue;
                     }
-                    //每5次回答 才处理一次 为了防止回答太快
+                    //每5次回答 才处理一次 为了防止飞书发消息太快
                     if (parse.isSuccess() && !parse.isFinished() && count % 5 != 0) {
                         continue;
                     }

@@ -7,6 +7,12 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 会话池
+ * 记录用户和对应gpt会话上下文的对应关系
+ * 通过chatId来区分用户，一个用户对应一个会话
+ * 从而实现gpt具有上下文能力
+ */
 @Component
 @Slf4j
 public class ConversationPool {
