@@ -10,6 +10,8 @@ import com.zjs.feishubot.entity.gpt.Content;
 import com.zjs.feishubot.entity.gpt.ErrorCode;
 import com.zjs.feishubot.entity.gpt.Message;
 import com.zjs.feishubot.entity.gptRequestBody.CreateConversationBody;
+import com.zjs.feishubot.util.Task;
+import com.zjs.feishubot.util.TaskPool;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -102,8 +104,9 @@ public class ChatService {
 
     /**
      * 新建会话
+     *
      * @param content 对话内容
-     * @param model 模型
+     * @param model   模型
      * @param process 回调
      * @throws InterruptedException
      */
@@ -113,11 +116,12 @@ public class ChatService {
 
     /**
      * 继续会话
-     * @param content 对话内容
-     * @param model 模型
+     *
+     * @param content         对话内容
+     * @param model           模型
      * @param parentMessageId 父消息id
-     * @param conversationId 会话id
-     * @param process 回调
+     * @param conversationId  会话id
+     * @param process         回调
      * @throws InterruptedException
      */
     public void keepChat(String content, String model, String parentMessageId, String conversationId, AnswerProcess process) throws InterruptedException {
@@ -139,7 +143,7 @@ public class ChatService {
 
     private void post(String param, String urlStr, AnswerProcess process) {
         URL url = null;
-        Answer parse = null;
+        Answer answer = null;
         try {
             url = new URL(urlStr);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -174,29 +178,24 @@ public class ChatService {
 
                 try {
                     count++;
-                    parse = parse(line);
-                    if (parse == null) {
-                        continue;
-                    }
-                    //每5次回答 才处理一次 为了防止飞书发消息太快
-                    if (parse.isSuccess() && !parse.isFinished() && count % 5 != 0) {
+                    answer = parse(line);
+
+                    if (answer == null) {
                         continue;
                     }
 
-                    if (parse.isSuccess() && !parse.getMessage().getAuthor().getRole().equals("assistant")) {
+                    answer.setSeq(count);
+                    //每10次 才处理一次 为了防止飞书发消息太快
+                    if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
+                        continue;
+                    }
+
+                    if (answer.isSuccess() && !answer.getMessage().getAuthor().getRole().equals("assistant")) {
                         continue;
                     }
 
                     //异步处理
-                    Answer finalParse = parse;
-                    new Thread(() -> {
-                        try {
-                            process.process(finalParse);
-                        } catch (Exception e) {
-                            log.error("处理ChatGpt响应出错", e);
-                            log.error(finalParse.toString());
-                        }
-                    }).start();
+                    TaskPool.addTask(new Task(process, answer, this.account));
                 } catch (Exception e) {
                     log.error("解析ChatGpt响应出错", e);
                     log.error(line);

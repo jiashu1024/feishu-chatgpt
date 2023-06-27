@@ -14,6 +14,7 @@
 <img src="./assets/image-20230623034003565.png" alt="image-20230623034003565" style="zoom:25%;" />
 
 所有的权限都开通
+同时将通讯录下所有权限都开通
 
 <img src="./assets/image-20230623034018518.png" alt="image-20230623034018518" style="zoom:25%;" />
 

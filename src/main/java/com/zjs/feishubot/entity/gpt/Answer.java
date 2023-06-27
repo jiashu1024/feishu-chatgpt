@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class Answer {
 
+    private int seq;
+
     /**
      * 是否正常返回GPT对话结果
      */

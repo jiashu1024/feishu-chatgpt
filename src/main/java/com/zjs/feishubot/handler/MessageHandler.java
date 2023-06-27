@@ -38,6 +38,7 @@ public class MessageHandler {
 
     /**
      * 飞书推送事件会重复，用于去重
+     *
      * @param event
      * @return
      */
@@ -45,7 +46,7 @@ public class MessageHandler {
         String requestId = event.getRequestId();
         // 根据内存记录的消息事件id去重
         if (RequestIdSet.requestIdSet.contains(requestId)) {
-            log.warn("重复请求，requestId:{}", requestId);
+            //log.warn("重复请求，requestId:{}", requestId);
             return false;
         }
         RequestIdSet.requestIdSet.add(requestId);
@@ -55,7 +56,7 @@ public class MessageHandler {
         Long now = System.currentTimeMillis();
         if (now - createTimeLong > 1000 * 10) {
             // 根据消息事件的创建时间去重
-            log.warn("消息过期，requestId:{}", requestId);
+            //log.warn("消息过期，requestId:{}", requestId);
             return false;
         }
 
@@ -81,7 +82,6 @@ public class MessageHandler {
     public void process(P2MessageReceiveV1 event) throws Exception {
         P2MessageReceiveV1Data messageEvent = event.getEvent();
         EventMessage message = messageEvent.getMessage();
-
 
         if (!checkInvalidEvent(event)) {
             return;
@@ -136,6 +136,10 @@ public class MessageHandler {
         }
 
         if (chatService == null) {
+            if (accountPool.getSize() == 0) {
+                messageService.sendTextMessageByChatId(chatId, "服务器未配置可用账户");
+                return;
+            }
             messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
             return;
         }

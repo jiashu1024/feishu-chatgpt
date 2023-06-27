@@ -1,7 +1,6 @@
 package com.zjs.feishubot.controller;
 
 import cn.hutool.json.JSONUtil;
-import com.lark.oapi.core.utils.Jsons;
 import com.lark.oapi.event.EventDispatcher;
 import com.lark.oapi.sdk.servlet.ext.ServletAdapter;
 import com.lark.oapi.service.contact.v3.ContactService;
@@ -55,6 +54,7 @@ public class EventController {
 
     /**
      * 处理消息卡片事件回调
+     *
      * @param body
      * @return
      */
@@ -89,7 +89,7 @@ public class EventController {
     @GetMapping("/ping")
     @ResponseBody
     public String ping() {
-       return "pong";
+        return "pong";
     }
 
 
@@ -99,10 +99,9 @@ public class EventController {
                 .onP2MessageReceiveV1(new ImService.P2MessageReceiveV1Handler() {
                     @Override
                     public void handle(P2MessageReceiveV1 event) {
-
                         //处理消息事件
                         try {
-                            log.info("收到消息: {}", Jsons.DEFAULT.toJson(event));
+                            //log.info("收到消息: {}", Jsons.DEFAULT.toJson(event));
                             messageHandler.process(event);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
@@ -112,22 +111,22 @@ public class EventController {
                     @Override
                     public void handle(P2UserCreatedV3 event) {
                         //员工入职事件
-                        System.out.println(Jsons.DEFAULT.toJson(event));
-                        System.out.println(event.getRequestId());
+                        //System.out.println(Jsons.DEFAULT.toJson(event));
+                        //System.out.println(event.getRequestId());
                     }
                 })
                 .onP2MessageReadV1(new ImService.P2MessageReadV1Handler() {
                     @Override
                     public void handle(P2MessageReadV1 event) {
                         //处理私聊已读事件
-                        System.out.println(Jsons.DEFAULT.toJson(event));
-                        System.out.println(event.getRequestId());
+                        //System.out.println(Jsons.DEFAULT.toJson(event));
+                        //System.out.println(event.getRequestId());
                     }
                 }).onP1MessageReadV1(new ImService.P1MessageReadV1Handler() {
                     @Override
                     public void handle(P1MessageReadV1 event) {
-                        System.out.println(Jsons.DEFAULT.toJson(event));
-                        System.out.println(event.getRequestId());
+                        //System.out.println(Jsons.DEFAULT.toJson(event));
+                        //System.out.println(event.getRequestId());
                     }
                 })
                 .build();

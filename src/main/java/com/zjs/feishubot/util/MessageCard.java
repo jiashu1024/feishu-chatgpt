@@ -43,6 +43,7 @@ public class MessageCard {
 
     /**
      * 普通消息卡片格式
+     *
      * @param title
      * @param content
      * @return
@@ -60,6 +61,7 @@ public class MessageCard {
 
     /**
      * 带模型选择的消息卡片
+     *
      * @param title
      * @param content
      * @param selections

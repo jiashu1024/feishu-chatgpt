@@ -10,6 +10,7 @@ import java.util.List;
 public class AccountService {
     /**
      * 从配置文件读取账号信息
+     *
      * @return
      */
     public List<Account> getAccounts() {
@@ -18,6 +19,7 @@ public class AccountService {
 
     /**
      * 更新账号的token到配置文件
+     *
      * @param accountName
      * @param newToken
      */

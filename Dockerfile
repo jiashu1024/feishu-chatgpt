@@ -13,7 +13,7 @@ RUN git clone https://github.com/1130600015/feishu-chatgpt.git .
 RUN mvn package -DskipTests
 
 # 将 target 里的 jar 包拷贝到项目根目录
-RUN mv target/*.jar .
+RUN mv target/FeiShuBot-1.0.0.jar .
 
 # 用 Java 执行 jar 包
 CMD ["java", "-jar", "FeiShuBot-1.0.0.jar"]
