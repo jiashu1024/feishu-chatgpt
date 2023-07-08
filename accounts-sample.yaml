@@ -1,14 +1,11 @@
 !!com.zjs.feishubot.entity.AccountList
 #有几个账号就写几个
-#level: 3 为普通账号，level: 4为plus账号
 #如果gpt账号是邮箱登录，只用填账号和密码，程序会自动登录获取token，不用填token
 #如果gpt账号用谷歌账号啥的登录，程序不能实现账号密码自动登录获取token，填账号，手动获取token填入token字段 https://chat.openai.com/api/auth/session
 accounts:
 - account:
-  level: 4
   password:
   token:
 - account:
-  level: 3
   password:
   token:
