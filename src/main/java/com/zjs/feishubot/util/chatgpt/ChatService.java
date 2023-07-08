@@ -261,7 +261,6 @@ public class ChatService {
                     log.warn("账号{} token失效", account);
                 }
                 answer.setError(error.get("message"));
-
                 return answer;
             }
             log.error("未知错误：{}", body);
@@ -270,4 +269,8 @@ public class ChatService {
         }
         return answer;
     }
+
+  public void refreshToken() {
+      build();
+  }
 }
