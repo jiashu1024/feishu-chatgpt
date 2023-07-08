@@ -19,8 +19,8 @@ public class ConversationPool {
     public volatile Map<String, Conversation> conversationMap = new HashMap<>();
 
     public void addConversation(String chatId, Conversation conversation) {
-        log.info("chatId:{} 会话变更前:{}", chatId, conversationMap.get(chatId));
-        log.info("chatId:{} 会话变更后:{}", chatId, conversation);
+//        log.info("chatId:{} 会话变更前:{}", chatId, conversationMap.get(chatId));
+//        log.info("chatId:{} 会话变更后:{}", chatId, conversation);
         conversationMap.put(chatId, conversation);
     }
 

@@ -9,7 +9,7 @@
 
 <img src="./assets/image-20230623033948491.png" alt="image-20230623033948491" style="zoom:25%;" />
 
-​	配置Encrypt Kgitey，自定义个密码输进去就ok了，后面配置文件要用
+​	配置Encrypt Key，自定义个密码输进去就ok了，后面配置文件要用
 
 <img src="./assets/image-20230623034003565.png" alt="image-20230623034003565" style="zoom:25%;" />
 

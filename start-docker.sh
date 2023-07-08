@@ -11,12 +11,15 @@ fi
 
 docker pull zhangjiashu/feishubot
 
-
+if [ -f "accounts-sample.yaml" ] && [ -f "application-sample.yaml" ]; then
+  mv accounts-sample.yaml accounts.yaml
+  mv application-sample.yaml application.yaml
+fi
 ##启动新的feishubot容器
 
 docker run -d \
 --name feishubot \
 -e TZ=Asia/Shanghai \
 -p 9001:9001 \
--v ./accounts-sample.yaml:/app/accounts.yaml \
--v ./application-sample.yaml:/app/application.yaml zhangjiashu/feishubot
+-v ./accounts.yaml:/app/accounts.yaml \
+-v ./application.yaml:/app/application.yaml zhangjiashu/feishubot
