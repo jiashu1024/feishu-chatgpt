@@ -121,8 +121,7 @@ public class MessageHandler {
             conversationPool.addConversation(chatId, conversation);
         } else {
             //如果有会话，则需要判断是要建新会话意图还是以前老会话
-            chatService = null;
-            if (conversation.getConversationId() == null || conversation.getConversationId().equals("")) {
+          if (conversation.getConversationId() == null || conversation.getConversationId().equals("")) {
                 //新会话意图
                 newChat = true;
                 model = conversation.getModel();
@@ -160,18 +159,16 @@ public class MessageHandler {
         log.info("title:{}", title);
         if (newChat) {
             log.info("新建会话");
-            ChatService finalChatService = chatService;
 
-            chatService.newChat(text, model.value, answer -> {
-                processAnswer(answer, title, chatId, finalChatService, messageId, event, model, selections);
+          chatService.newChat(text, model.value, answer -> {
+                processAnswer(answer, title, chatId, chatService, messageId, event, model, selections);
             });
 
         } else {
             log.info("继续会话");
-            ChatService finalChatService1 = chatService;
-            chatService.keepChat(text, model.value, conversation.parentMessageId, conversation.conversationId, answer -> {
-                String newTitle = model.key + " : " + finalChatService1.getAccount();
-                processAnswer(answer, newTitle, chatId, finalChatService1, messageId, event, model, selections);
+          chatService.keepChat(text, model.value, conversation.parentMessageId, conversation.conversationId, answer -> {
+                String newTitle = model.key + " : " + chatService.getAccount();
+                processAnswer(answer, newTitle, chatId, chatService, messageId, event, model, selections);
             });
         }
     }
@@ -185,6 +182,10 @@ public class MessageHandler {
         Conversation conversation35 = new Conversation();
         conversation35.setModel(Model.GPT_3_5);
         selections.put(Model.GPT_3_5.key, JSONUtil.toJsonStr(conversation35));
+
+        if (AccountPool.plusPool.isEmpty()) {
+          return selections;
+        }
 
         Conversation conversation4Brose = new Conversation();
         conversation4Brose.setModel(Model.PLUS_GPT_4_BROWSING);
