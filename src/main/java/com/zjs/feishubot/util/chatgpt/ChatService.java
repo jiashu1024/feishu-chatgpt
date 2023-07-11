@@ -40,6 +40,8 @@ public class ChatService {
   private volatile Status status;
   private Semaphore semaphore = new Semaphore(1);
 
+  private StringBuilder errorString;
+
   private String proxyUrl;
 
   private static final String LOGIN_URL = "/chatgpt/login";
@@ -164,8 +166,13 @@ public class ChatService {
       // 获取并处理响应
       int status = connection.getResponseCode();
       Reader streamReader = null;
+      boolean error = false;
+      errorString = new StringBuilder();
       if (status > 299) {
         streamReader = new InputStreamReader(connection.getErrorStream());
+        log.error("请求失败，状态码：{}", status);
+
+        error = true;
       } else {
         streamReader = new InputStreamReader(connection.getInputStream());
       }
@@ -176,6 +183,12 @@ public class ChatService {
       int count = 0;
       while ((line = reader.readLine()) != null) {
         if (line.length() == 0) {
+          continue;
+        }
+        if (error) {
+          errorString.append(line);
+          log.error(line);
+
           continue;
         }
 
@@ -203,6 +216,14 @@ public class ChatService {
           log.error("解析ChatGpt响应出错", e);
           log.error(line);
         }
+      }
+
+      if (error) {
+        answer = new Answer();
+        answer.setError(errorString.toString());
+        answer.setErrorCode(ErrorCode.RESPONSE_ERROR);
+        answer.setSuccess(false);
+        TaskPool.addTask(new Task(process, answer, this.account));
       }
 
       reader.close();

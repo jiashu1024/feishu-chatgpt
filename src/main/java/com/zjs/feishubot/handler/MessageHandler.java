@@ -176,6 +176,8 @@ public class MessageHandler {
     Map<String, String> selections = createSelection(conversation);
 
     String modelParam = Models.modelMap.get(model).getSlug();
+
+
     if (newChat) {
       log.info("新建会话");
       conversation.setTitle(title);
@@ -183,7 +185,6 @@ public class MessageHandler {
       chatService.newChat(text, modelParam, answer -> {
         processAnswer(answer, finalTitle, chatId, chatService, messageId, event, model, selections);
       });
-
     } else {
       log.info("继续会话");
       title = conversation.getTitle();
@@ -192,7 +193,9 @@ public class MessageHandler {
         processAnswer(answer, finalTitle1, chatId, chatService, messageId, event, model, selections);
       });
     }
-    log.info("服务完成,account: {} ,model:{},chatId:{}",chatService.getAccount(),model,chatId);
+
+
+    log.info("服务完成,account: {} ,model:{},chatId:{}", chatService.getAccount(), model, chatId);
   }
 
   private Map<String, String> createSelection(Conversation conversation) {
@@ -215,7 +218,6 @@ public class MessageHandler {
       Conversation plusModelConversation = new Conversation();
       plusModelConversation.setModel(modelTitle);
       selections.put(modelTitle, JSONUtil.toJsonStr(plusModelConversation));
-
     }
     return selections;
   }
