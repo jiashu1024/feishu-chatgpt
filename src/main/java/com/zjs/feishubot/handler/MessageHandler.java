@@ -112,13 +112,23 @@ public class MessageHandler {
     if (conversation == null) {
       //如果没有会话，新建会话，采用默认3.5的模型
       newChat = true;
-      model = Models.DEFAULT_MODEL;
-      chatService = accountPool.getFreeChatService(model);
 
-      conversation = new Conversation();
-      conversation.setChatId(chatId);
-      conversation.setModel(model);
-      conversationPool.addConversation(chatId, conversation);
+      chatService = accountPool.getFreeChatService("");
+      if (chatService != null) {
+        if (chatService.getLevel() == 4) {
+          model = Models.PLUS_DEFAULT_MODEL;
+        } else {
+          model = Models.NORMAL_DEFAULT_MODEL;
+        }
+        conversation = new Conversation();
+        conversation.setChatId(chatId);
+        conversation.setModel(model);
+        conversationPool.addConversation(chatId, conversation);
+      } else {
+        model = null;
+      }
+
+
     } else {
       //如果有会话，则需要判断是要建新会话意图还是以前老会话
       if (conversation.getConversationId() == null || conversation.getConversationId().equals("")) {

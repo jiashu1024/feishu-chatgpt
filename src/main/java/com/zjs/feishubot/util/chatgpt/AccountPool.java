@@ -149,8 +149,11 @@ public class AccountPool {
 
   public ChatService getChatService(String account) {
     if (account == null || account.equals("")) {
-
-      return getFreeChatService(Models.DEFAULT_MODEL);
+      if (plusPool.containsKey(account)) {
+        return getFreeChatService(Models.PLUS_DEFAULT_MODEL);
+      } else {
+        return getFreeChatService(Models.NORMAL_DEFAULT_MODEL);
+      }
     }
     return accountPool.get(account);
   }

@@ -10,7 +10,8 @@ public class Models {
   /**
    * 默认模型
    */
-  public static final String DEFAULT_MODEL = "Default (GPT-3.5)";
+  public static final String PLUS_DEFAULT_MODEL = "Default (GPT-3.5)";
+  public static final String NORMAL_DEFAULT_MODEL = "Turbo (Default for free users)";
 
   /**
    * 模型title和对应模型
@@ -18,12 +19,12 @@ public class Models {
   public static Map<String,Model> modelMap = new HashMap<>();
 
   /**
-   * plus模型title 用于判断请求是否是plus模型
+   * plus模型title池 用于判断请求是否是plus模型
    */
   public static Set<String> plusModelTitle = new HashSet<>();
 
   /**
-   * normal模型title
+   * normal模型title池
    */
   public static Set<String> normalModelTitle = new HashSet<>();
 }
