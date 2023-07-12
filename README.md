@@ -27,6 +27,8 @@ https://github.com/1130600015/feishu-chatgpt/assets/67859663/1ff473be-15da-499b-
 
 [飞书机器人配置和部署](docs/feishu.md)
 
+[使用教程](docs/usage.md)
+
 ## 联系方式
 
 qq:1130600015

@@ -8,10 +8,19 @@ import java.util.Set;
 public class Models {
 
   /**
-   * 默认模型
+   * plus用户默认模型
    */
   public static final String PLUS_DEFAULT_MODEL = "Default (GPT-3.5)";
+
+  /**
+   * 普通用户默认模型
+   */
   public static final String NORMAL_DEFAULT_MODEL = "Turbo (Default for free users)";
+
+  /**
+   * 空模型
+   */
+  public static final String EMPTY_MODEL = "Empty";
 
   /**
    * 模型title和对应模型

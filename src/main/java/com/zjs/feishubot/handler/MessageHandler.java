@@ -5,6 +5,7 @@ import com.lark.oapi.Client;
 import com.lark.oapi.service.contact.v3.model.User;
 import com.lark.oapi.service.im.v1.model.*;
 import com.zjs.feishubot.entity.Conversation;
+import com.zjs.feishubot.entity.Mode;
 import com.zjs.feishubot.entity.Status;
 import com.zjs.feishubot.entity.gpt.Answer;
 import com.zjs.feishubot.entity.gpt.ErrorCode;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -112,17 +114,20 @@ public class MessageHandler {
     if (conversation == null) {
       //如果没有会话，新建会话，采用默认3.5的模型
       newChat = true;
-
-      chatService = accountPool.getFreeChatService("");
+      conversation = new Conversation();
+      chatService = accountPool.getFreeChatService(Models.EMPTY_MODEL);
       if (chatService != null) {
         if (chatService.getLevel() == 4) {
           model = Models.PLUS_DEFAULT_MODEL;
         } else {
           model = Models.NORMAL_DEFAULT_MODEL;
         }
-        conversation = new Conversation();
+
         conversation.setChatId(chatId);
         conversation.setModel(model);
+        //默认使用keep模式
+        conversation.setMode(Mode.KEEP);
+
         conversationPool.addConversation(chatId, conversation);
       } else {
         model = null;
@@ -130,6 +135,7 @@ public class MessageHandler {
 
 
     } else {
+
       //如果有会话，则需要判断是要建新会话意图还是以前老会话
       if (conversation.getConversationId() == null || conversation.getConversationId().equals("")) {
         //新会话意图
@@ -144,22 +150,85 @@ public class MessageHandler {
       }
     }
 
+    //处理切换模式命令
+    if (text.equals("/fast")) {
+      conversation.setMode(Mode.FAST);
+      return;
+    } else if (text.equals("/keep")) {
+      conversation.setMode(Mode.KEEP);
+      return;
+    }
+
     if (chatService == null) {
       if (accountPool.getSize() == 0) {
         messageService.sendTextMessageByChatId(chatId, "服务器未配置可用账户");
         return;
       }
-      messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
+
+      //如果是fast模式，则需要切换账号服务
+      if (conversation.getMode() == Mode.FAST) {
+        newChat = true;
+        chatService = accountPool.getFreeChatService(Models.EMPTY_MODEL);
+        if (chatService == null) {
+          messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
+          return;
+        } else {
+          conversation.setAccount(chatService.getAccount());
+
+          if (chatService.getLevel() == 4) {
+            conversation.setModel(Models.PLUS_DEFAULT_MODEL);
+          } else {
+            conversation.setModel(Models.NORMAL_DEFAULT_MODEL);
+          }
+        }
+      }
+      //keep模式，保证上下文，只能等待
+      if (conversation.getMode() == Mode.KEEP) {
+        messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
+        return;
+      }
+    }
+
+    //账号池里所有的账号都在运行
+    if (chatService == null) {
+      messageService.sendTextMessageByChatId(chatId, "目前无空闲账号，请稍后再试");
       return;
     }
+
+    String firstText = "正在生成中，请稍后...";
+
     if (chatService.getStatus() == Status.RUNNING) {
-      messageService.sendTextMessageByChatId(chatId, "目前该模型正在运行，请稍等...");
+      //keep模式只能等待
+      if (conversation.getMode() == Mode.KEEP) {
+        firstText = "目前该账号正在运行，请稍等...";
+      } else {
+        //fast模式，切换账号，创建新会话
+        newChat = true;
+        chatService = accountPool.getFreeChatService(Models.EMPTY_MODEL);
+        if (chatService.getStatus() == Status.RUNNING) {
+          firstText = "目前该账号正在运行，请稍等...";
+        } else {
+          conversation.setAccount(chatService.getAccount());
+          //fast模式下，切换账号和原账号模型保持一致
+          //如果原账号是plus模型，则切换到的是normal账号，则用normal的模型
+          if (chatService.getLevel() == 4) {
+            if (Models.plusModelTitle.contains(conversation.getModel())) {
+              conversation.setModel(conversation.getModel());
+            } else {
+              conversation.setModel(Models.PLUS_DEFAULT_MODEL);
+            }
+          } else {
+            conversation.setModel(Models.NORMAL_DEFAULT_MODEL);
+          }
+        }
+      }
     }
+    conversation.setAccount(chatService.getAccount());
     chatService.setStatus(Status.RUNNING);
     conversation.setStatus(Status.RUNNING);
 
     String title;
-    if (chatService.getAccount() == null || chatService.getAccount().length() == 0) {
+    if (!StringUtils.hasLength(chatService.getAccount())) {
       title = model;
     } else {
       title = model + " : " + chatService.getAccount();
@@ -169,28 +238,32 @@ public class MessageHandler {
       title += "  [plus] ";
     }
 
+    title += "「" + conversation.getMode() + "」";
 
-    CreateMessageResp resp = messageService.sendGptAnswerMessage(chatId, title, "正在生成中，请稍后");
+
+    CreateMessageResp resp = messageService.sendGptAnswerMessage(chatId, title, firstText);
     String messageId = resp.getData().getMessageId();
 
     Map<String, String> selections = createSelection(conversation);
 
-    String modelParam = Models.modelMap.get(model).getSlug();
+    String modelParam = Models.modelMap.get(conversation.getModel()).getSlug();
 
 
     if (newChat) {
       log.info("新建会话");
       conversation.setTitle(title);
       String finalTitle = title;
+      ChatService finalChatService = chatService;
       chatService.newChat(text, modelParam, answer -> {
-        processAnswer(answer, finalTitle, chatId, chatService, messageId, event, model, selections);
+        processAnswer(answer, finalTitle, chatId, finalChatService, messageId, event, model, selections);
       });
     } else {
       log.info("继续会话");
       title = conversation.getTitle();
       String finalTitle1 = title;
+      ChatService finalChatService1 = chatService;
       chatService.keepChat(text, modelParam, conversation.parentMessageId, conversation.conversationId, answer -> {
-        processAnswer(answer, finalTitle1, chatId, chatService, messageId, event, model, selections);
+        processAnswer(answer, finalTitle1, chatId, finalChatService1, messageId, event, model, selections);
       });
     }
 
@@ -249,12 +322,8 @@ public class MessageHandler {
       return;
     }
     Conversation conversation = conversationPool.getConversation(chatId);
-    conversation.setChatId(chatId);
     conversation.setParentMessageId(answer.getMessage().getId());
     conversation.setConversationId(answer.getConversationId());
-    conversation.setAccount(chatService.getAccount());
-    conversation.setModel(model);
-    conversation.setTitle(title);
 
     if (!answer.isFinished()) {
       chatService.setStatus(Status.RUNNING);
@@ -262,6 +331,12 @@ public class MessageHandler {
     } else {
       chatService.setStatus(Status.FINISHED);
       conversation.setStatus(Status.FINISHED);
+      //    conversation.setChatId(chatId);
+//      conversation.setParentMessageId(answer.getMessage().getId());
+//      conversation.setConversationId(answer.getConversationId());
+//    conversation.setAccount(chatService.getAccount());
+//    conversation.setModel(model);
+//    conversation.setTitle(title);
     }
 
     selections.put("使用当前上下文", JSONUtil.toJsonStr(conversation));

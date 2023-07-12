@@ -29,4 +29,9 @@ public class Conversation {
    * 消息中的标题
    */
   public String title;
+
+  /**
+   * 回复模式
+   */
+  public Mode mode;
 }

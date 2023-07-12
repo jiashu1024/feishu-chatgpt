@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -104,7 +105,17 @@ public class AccountPool {
     TaskPool.runTask();
   }
 
+
+  /**
+   * 需要plus模型，则从plus账号池中获取
+   * 需要normal模型，则从normal账号池中获取
+   * @param model 模型title
+   * @return
+   */
   public ChatService getFreeChatService(String model) {
+    if(!StringUtils.hasText(model)) {
+      model = Models.NORMAL_DEFAULT_MODEL;
+    }
 
     List<ChatService> plusAccountList = new ArrayList<>();
     for (String s : plusPool.keySet()) {
@@ -114,8 +125,9 @@ public class AccountPool {
       }
     }
 
-    if (plusAccountList.size() > 0 && Models.plusModelTitle.contains(model)) {
-      //无论什么模型，都优先使用plus账号
+    //如果plus账号池中有账号，且需要plus模型，则从plus账号池中获取
+    //如果需要的模型是空模型(新建会话，使用对应账号默认模型就行)，也可以从plus账号池中获取
+    if (plusAccountList.size() > 0 && (Models.plusModelTitle.contains(model) || model.equals(Models.EMPTY_MODEL))) {
       return plusAccountList.get((int) (Math.random() * plusAccountList.size()));
     }
 
