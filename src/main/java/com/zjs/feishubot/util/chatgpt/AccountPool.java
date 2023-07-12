@@ -85,7 +85,6 @@ public class AccountPool {
       }
 
 
-
       usefulAccounts.add(account.getAccount());
       accountPool.put(account.getAccount(), chatService);
       size++;
@@ -115,13 +114,13 @@ public class AccountPool {
       }
     }
 
-    if (plusAccountList.size() > 0) {
+    if (plusAccountList.size() > 0 && Models.plusModelTitle.contains(model)) {
       //无论什么模型，都优先使用plus账号
       return plusAccountList.get((int) (Math.random() * plusAccountList.size()));
     }
 
     if (Models.plusModelTitle.contains(model)) {
-      //如果是plus模型，但是没有plus账号，返回null
+      //如果需要plus模型，但是没有plus账号，返回null
       return null;
     }
     List<ChatService> normalAccountList = new ArrayList<>();
@@ -131,7 +130,7 @@ public class AccountPool {
         normalAccountList.add(chatService);
       }
     }
-    if(normalAccountList.size() == 0) {
+    if (normalAccountList.size() == 0) {
       return null;
     } else {
       return normalAccountList.get((int) (Math.random() * normalAccountList.size()));
@@ -156,6 +155,13 @@ public class AccountPool {
       }
     }
     return accountPool.get(account);
+  }
+
+  public static void removeAccount(String account) {
+    log.info("移除账号{}", account);
+    accountPool.remove(account);
+    normalPool.remove(account);
+    plusPool.remove(account);
   }
 
 }

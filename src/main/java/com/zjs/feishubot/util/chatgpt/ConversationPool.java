@@ -16,15 +16,15 @@ import java.util.Map;
 @Component
 @Slf4j
 public class ConversationPool {
-    public volatile Map<String, Conversation> conversationMap = new HashMap<>();
+  public volatile Map<String, Conversation> conversationMap = new HashMap<>();
 
-    public void addConversation(String chatId, Conversation conversation) {
+  public void addConversation(String chatId, Conversation conversation) {
 //        log.info("chatId:{} 会话变更前:{}", chatId, conversationMap.get(chatId));
 //        log.info("chatId:{} 会话变更后:{}", chatId, conversation);
-        conversationMap.put(chatId, conversation);
-    }
+    conversationMap.put(chatId, conversation);
+  }
 
-    public Conversation getConversation(String chatId) {
-        return conversationMap.get(chatId);
-    }
+  public Conversation getConversation(String chatId) {
+    return conversationMap.get(chatId);
+  }
 }

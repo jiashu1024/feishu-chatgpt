@@ -16,7 +16,7 @@ public class Models {
   /**
    * 模型title和对应模型
    */
-  public static Map<String,Model> modelMap = new HashMap<>();
+  public static Map<String, Model> modelMap = new HashMap<>();
 
   /**
    * plus模型title池 用于判断请求是否是plus模型

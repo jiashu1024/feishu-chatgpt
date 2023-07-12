@@ -8,8 +8,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class FeiShuBotApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(FeiShuBotApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(FeiShuBotApplication.class, args);
+  }
 
 }

@@ -238,6 +238,10 @@ public class MessageHandler {
           messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, "账号重新登录失败", selections);
         }
         return;
+      } else if (answer.getErrorCode() == ErrorCode.ACCOUNT_DEACTIVATED) {
+        answer.setError(ErrorCode.map.get(ErrorCode.ACCOUNT_DEACTIVATED));
+        log.error("账号{} {}", chatService.getAccount(), ErrorCode.map.get(ErrorCode.ACCOUNT_DEACTIVATED));
+        AccountPool.removeAccount(chatService.getAccount());
       }
       messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, (String) answer.getError(), selections);
       chatService.setStatus(Status.FINISHED);

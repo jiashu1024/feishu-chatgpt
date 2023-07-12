@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class Content {
-    private String content_type;
-    private List<String> parts;
-    private String text;
+  private String content_type;
+  private List<String> parts;
+  private String text;
 }

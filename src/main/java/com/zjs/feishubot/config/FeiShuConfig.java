@@ -9,19 +9,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FeiShuConfig {
 
-    @Value("${feishu.appId}")
-    private String appId;
+  @Value("${feishu.appId}")
+  private String appId;
 
-    @Value("${feishu.appSecret}")
-    private String appSecret;
+  @Value("${feishu.appSecret}")
+  private String appSecret;
 
-    @Bean
-    public ServletAdapter getServletAdapter() {
-        return new ServletAdapter();
-    }
+  @Bean
+  public ServletAdapter getServletAdapter() {
+    return new ServletAdapter();
+  }
 
-    @Bean
-    public Client getClient() {
-        return Client.newBuilder(appId, appSecret).build();
-    }
+  @Bean
+  public Client getClient() {
+    return Client.newBuilder(appId, appSecret).build();
+  }
 }

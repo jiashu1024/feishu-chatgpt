@@ -1,12 +1,10 @@
 package com.zjs.feishubot.util.chatgpt;
 
-import cn.hutool.core.lang.TypeReference;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.json.ObjectMapper;
 import com.zjs.feishubot.entity.Status;
 import com.zjs.feishubot.entity.gpt.*;
 import com.zjs.feishubot.entity.gptRequestBody.CreateConversationBody;
@@ -14,6 +12,7 @@ import com.zjs.feishubot.util.Task;
 import com.zjs.feishubot.util.TaskPool;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -61,7 +60,6 @@ public class ChatService {
     this.proxyUrl = proxyUrl;
     this.status = Status.FINISHED;
     this.level = 3;
-
   }
 
   public boolean build() {
@@ -146,6 +144,12 @@ public class ChatService {
     System.out.println(response.body());
   }
 
+  /**
+   * 向gpt发起请求
+   * @param param 请求参数
+   * @param urlStr 请求的地址
+   * @param process 响应处理器
+   */
   private void post(String param, String urlStr, AnswerProcess process) {
     URL url = null;
     Answer answer = null;
@@ -171,7 +175,6 @@ public class ChatService {
       if (status > 299) {
         streamReader = new InputStreamReader(connection.getErrorStream());
         log.error("请求失败，状态码：{}", status);
-
         error = true;
       } else {
         streamReader = new InputStreamReader(connection.getInputStream());
@@ -201,7 +204,7 @@ public class ChatService {
           }
 
           answer.setSeq(count);
-          //每10次 才处理一次 为了防止飞书发消息太快
+          //每10行 才处理一次 为了防止飞书发消息太快被限制频率
           if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
             continue;
           }
@@ -223,6 +226,21 @@ public class ChatService {
         answer.setError(errorString.toString());
         answer.setErrorCode(ErrorCode.RESPONSE_ERROR);
         answer.setSuccess(false);
+
+        try {
+          JSONObject jsonObject = new JSONObject(errorString.toString());
+          String detail = jsonObject.optString("detail");
+          if (detail != null) {
+            JSONObject detailObject = new JSONObject(detail);
+            String code = detailObject.optString("code");
+            if (code.equals("account_deactivated")) {
+              answer.setErrorCode(ErrorCode.ACCOUNT_DEACTIVATED);
+            }
+          }
+
+
+        } catch (JSONException ignored) {
+        }
         TaskPool.addTask(new Task(process, answer, this.account));
       }
 
@@ -300,6 +318,7 @@ public class ChatService {
 
   /**
    * 查询账号可用模型从而判断账号是否plus用户
+   *
    * @return 查询是否成功 不成功的原因一般为token失效
    */
   public boolean queryAccountLevel() {

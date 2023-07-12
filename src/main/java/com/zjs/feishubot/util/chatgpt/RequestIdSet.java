@@ -8,5 +8,5 @@ import java.util.Set;
  * 事件可能会重复推送，所以需要去重
  */
 public class RequestIdSet {
-    public static final Set<String> requestIdSet = new HashSet<>();
+  public static final Set<String> requestIdSet = new HashSet<>();
 }

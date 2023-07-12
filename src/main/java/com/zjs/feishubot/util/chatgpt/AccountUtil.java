@@ -44,7 +44,6 @@ public class AccountUtil {
   }
 
   public static void queryAccountLevel() {
-    log.info("query account level");
     Set<String> accounts = AccountPool.accountPool.keySet();
     for (String account : accounts) {
       ChatService chatService = AccountPool.accountPool.get(account);
@@ -52,7 +51,7 @@ public class AccountUtil {
         int level = chatService.getLevel();
         chatService.queryAccountLevel();
         if (level != chatService.getLevel()) {
-          log.info("账户等级变更: {} -> {}", level, chatService.getLevel());
+          log.info("账户「{}」等级变更: {} -> {}",account, level, chatService.getLevel());
         }
         //如果是plus账号降级
         //从plus账号池移动到普通账号池
