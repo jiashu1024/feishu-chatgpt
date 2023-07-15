@@ -15,7 +15,7 @@ public class Models {
   /**
    * 普通用户默认模型
    */
-  public static final String NORMAL_DEFAULT_MODEL = "Turbo (Default for free users)";
+  public static  String NORMAL_DEFAULT_MODEL;
 
   /**
    * 空模型
@@ -36,4 +36,6 @@ public class Models {
    * normal模型title池
    */
   public static Set<String> normalModelTitle = new HashSet<>();
+
+
 }

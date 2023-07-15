@@ -341,6 +341,7 @@ public class ChatService {
         plus = true;
       } else {
         Models.normalModelTitle.add(model.getTitle());
+        Models.NORMAL_DEFAULT_MODEL = model.getTitle();
       }
     }
     this.setLevel(plus ? 4 : 3);

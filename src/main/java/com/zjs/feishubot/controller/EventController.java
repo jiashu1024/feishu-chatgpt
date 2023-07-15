@@ -104,6 +104,7 @@ public class EventController {
             //log.info("收到消息: {}", Jsons.DEFAULT.toJson(event));
             messageHandler.process(event);
           } catch (Exception e) {
+            log.error("处理消息失败", e);
             throw new RuntimeException(e);
           }
         }
