@@ -1,0 +1,24 @@
+backend/FeiShuBot/target
+backend/FeiShuBot/.mvn
+backend/FeiShuBot/.idea
+backend/FeiShuBot/FeiShuBot.iml
+backend/FeiShuBot/mvnw
+backend/FeiShuBot/mvnw.cmd
+backend/FeiShuBot/application.yaml
+
+frontend/chatgpt/node_modules/
+frontend/chatgpt/.VSCodeCounter
+frontend/chatgpt/.env
+
+# Package Files #
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.DS_Store
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*

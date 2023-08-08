@@ -1,0 +1,10 @@
+FROM node:14 AS builder
+
+WORKDIR /app
+
+COPY frontend/chatgpt ./
+
+RUN npm install
+
+CMD [ "npm" ,"run", "serve"]
+

@@ -1,0 +1,37 @@
+server:
+  port: 9001
+
+spring:
+  application:
+    name: feishubot
+  redis:
+    host:
+    port: 6379
+    password:
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 500
+        min-idle: 0
+
+my-config:
+  app-id:
+  app-secret:
+  encrypt-key:
+  verification-token:
+  proxy-url: http://rnproxy.zhangjiashu.tech
+  user-name: admin
+  password: admin
+
+logging:
+  level:
+    root: info
+    com.zhangjiashu: debug
+    com.lark.oapi.event.EventDispatcher: OFF
+
+
+
+
+
+
