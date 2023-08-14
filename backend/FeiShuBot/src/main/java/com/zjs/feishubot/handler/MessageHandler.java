@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MessageHandler {
 
-
   protected final Client client;
   protected final UserService userService;
   protected final MessageService messageService;
@@ -135,7 +134,6 @@ public class MessageHandler {
       log.info("获取空闲账号耗时：{}ms", end - start);
 
       if (account != null) {
-
         conversation.setPlus(account.isPlusAccount());
         conversation.setChatId(chatId);
         conversation.setModel(model);
@@ -217,12 +215,14 @@ public class MessageHandler {
 
     if (account == null) {
       if (accountService.getAllAccountNoCheck().isEmpty()) {
+        log.debug("服务器未配置账号");
         messageService.sendTextMessageByChatId(chatId, "服务器未配置账户");
         return;
       }
 
       //keep模式，保证上下文，只能等待
       if (conversation.getMode() == Mode.KEEP) {
+        log.debug("无空闲模型");
         messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
         return;
       }
@@ -232,13 +232,15 @@ public class MessageHandler {
     //如果是fast模式，则需要切换账号服务
     //此时所有账号都在忙，需要等待
     if (conversation.getMode() == Mode.FAST) {
+      log.debug("fast 模式，尝试切换账号");
       if (account == null || accountService.isBusy(account.getAccount())) {
         //切换账号，且重试次数为 4 次
         newChat = true;
         messageService.sendTextMessageByChatId(chatId, "正在查找空闲账号...");
-        log.info("正在查找空闲账号...");
+        log.debug("正在查找空闲账号...");
         int retry = 0;
         while (retry < 4 && (account == null || account.isRunning())) {
+          log.debug("开始第{}次尝试查找可用空闲账号", retry + 1);
           account = accountService.getFreeAccountByModelAndCheck(model, openId);
           retry++;
         }
@@ -246,6 +248,7 @@ public class MessageHandler {
     }
 
     if (account == null) {
+      log.debug("目前无空闲账号");
       messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
       return;
     }
@@ -298,6 +301,7 @@ public class MessageHandler {
 
     boolean isPlusModel = Models.plusModelTitle.contains(model);
 
+    log.debug("save record");
     Record record = recordService.saveRecord(user, account, model, mode, text, null, Status.RUNNING, null, isPlusModel);
 
 
@@ -379,7 +383,7 @@ public class MessageHandler {
     return selections;
   }
 
-  private void retry(Account account,String chatId, P2MessageReceiveV1 event,String messageId) throws Exception {
+  private void retry(Account account, String chatId, P2MessageReceiveV1 event, String messageId) throws Exception {
     //重新处理该 event，删除去重记录
     accountService.addBusyAccount(account.getAccount());
     conversationPool.conversationMap.remove(chatId);
@@ -396,6 +400,7 @@ public class MessageHandler {
   }
 
   private void processAnswer(Answer answer, String title, String chatId, Account account, String messageId, P2MessageReceiveV1 event, Map<String, String> selections, Record record, UserConversationConfig conversationConfig) throws Exception {
+    log.debug("process answer : {}",answer);
     if (!answer.isSuccess()) {
       // gpt请求失败
       selections.remove("使用当前上下文");
@@ -408,7 +413,7 @@ public class MessageHandler {
         if (build.isAvailable()) {
 //          accountService.removeBusyAccount(account.getAccount());
           RequestIdSet.requestIdSet.remove(event.getRequestId());
-          process(event,messageId);
+          process(event, messageId);
           return;
         } else {
           messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, build.getError(), selections);
@@ -427,13 +432,13 @@ public class MessageHandler {
         //如果是 Fast 模式，需要重试
         if (conversationConfig.getMode() == Mode.FAST) {
           //重新处理该 event，删除去重记录
-          retry(account,chatId,event,messageId);
+          retry(account, chatId, event, messageId);
           return;
         }
       } else if (answer.getErrorCode() == ErrorCode.CONVERSATION_NOT_FOUNT) {
         if (conversationConfig.getMode() == Mode.FAST) {
           conversationPool.removeConversation(chatId);
-          retry(account,chatId,event,messageId);
+          retry(account, chatId, event, messageId);
           return;
         }
       }

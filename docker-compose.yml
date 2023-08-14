@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    image: zhangjiashu/feishubot:latest
+    container_name: feishubot-backend
+    ports:
+      - 9001:9001
+    environment:
+      - TZ=Asia/Shanghai
+      - SPRING_REDIS_HOST=feishu-redis   # 这里设置 Spring Boot 项目连接的 Redis 主机名
+      - SPRING_REDIS_PORT=6379    # 这里设置 Spring Boot 项目连接的 Redis 端口
+      - SPRING_REDIS_PASSWORD=feishuredis  # 这里设置 Redis 密码
+    volumes:
+      - ./application.yaml:/app/application.yaml
+    depends_on:
+     - redis
+    
+  redis:
+    image: redis
+    container_name: feishu-redis
+    command: redis-server --requirepass feishuredis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data:/data
+
+  frontend:
+    image: zhangjiashu/feishubot-frontend:latest
+    container_name: feishubot-frontend
+    ports:
+      - 9002:8080
+    volumes:
+      - .env:/app/.env
+
+  

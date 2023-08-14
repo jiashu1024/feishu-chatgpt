@@ -78,6 +78,7 @@ public class MessageService {
    * @throws Exception
    */
   public CreateMessageResp sendCardMessage(String chatId, String text) throws Exception {
+    log.debug("发送回复消息，长度为：{}", text.length());
     CreateMessageReq messageReq = createMessageReq("chat_id", chatId, "interactive", text);
     return getCreateMessageResp(messageReq);
   }
@@ -108,6 +109,7 @@ public class MessageService {
    * @throws Exception
    */
   public PatchMessageResp modifyMessageCard(String messageId, String content) throws Exception {
+    log.debug("发送消息，长度为:{}",content.length());
     PatchMessageReq req = createPatchMessageReq(messageId, content);
     return client.im().message().patch(req);
   }
