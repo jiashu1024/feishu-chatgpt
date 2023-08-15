@@ -1,6 +1,7 @@
 package com.zjs.feishubot.util;
 
 import com.zjs.feishubot.entity.Account;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-
+@Slf4j
 public class TaskPool {
   private static final Map<String, BlockingQueue<Task>> taskPool = new HashMap<>();
 
@@ -42,7 +43,7 @@ public class TaskPool {
             Task task = queue.take();
             task.run();
           } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("task pool error", e);
           }
         }
       }).start();

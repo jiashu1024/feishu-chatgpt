@@ -229,11 +229,8 @@ public class MessageHandler {
 
 
       //如果是fast模式，则需要切换账号服务
-      //此时所有账号都在忙，需要等待
       if (conversation.getMode() == Mode.FAST) {
         log.debug("fast 模式，尝试切换账号");
-        if (account == null || accountService.isBusy(account.getAccount())) {
-          //切换账号，且重试次数为 4 次
           newChat = true;
           messageService.sendTextMessageByChatId(chatId, "正在查找空闲账号...");
           log.debug("正在查找空闲账号...");
@@ -243,7 +240,6 @@ public class MessageHandler {
             account = accountService.getFreeAccountByModelAndCheck(model, openId);
             retry++;
           }
-        }
       }
     }
 
@@ -357,9 +353,6 @@ public class MessageHandler {
         processAnswer(answer, finalTitle, chatId, finalAccount, finalMessageId, event, selections, record, finalConversation);
       }, account);
     }
-
-
-    log.info("服务完成,account: {} ,model:{},chatId:{}", account.getAccount(), model, chatId);
   }
 
   private Map<String, String> createSelection(UserConversationConfig conversation, String userId) {
@@ -486,6 +479,7 @@ public class MessageHandler {
     }
 
     if (record.getStatus() != Status.RUNNING && !record.isUpdated()) {
+      log.info("服务完成,account: {} ,title:{},chatId:{}", account.getAccount(), title, chatId);
       recordService.updateRecord(record);
       record.setUpdated(true);
 //      accountService.removeBusyAccount(account.getAccount());

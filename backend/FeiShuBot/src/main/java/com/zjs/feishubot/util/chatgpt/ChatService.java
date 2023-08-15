@@ -89,7 +89,6 @@ public class ChatService {
    * @param content 对话内容
    * @param model   模型
    * @param process 回调
-   * @throws InterruptedException
    */
   public void newChat(String content, String model, AnswerProcess process, Account account) throws InterruptedException {
     chat(content, model, process, "", "", account);
@@ -103,7 +102,6 @@ public class ChatService {
    * @param parentMessageId 父消息id
    * @param conversationId  会话id
    * @param process         回调
-   * @throws InterruptedException
    */
   public void keepChat(String content, String model, String parentMessageId, String conversationId, AnswerProcess process, Account account) throws InterruptedException {
     chat(content, model, process, parentMessageId, conversationId, account);
@@ -148,18 +146,19 @@ public class ChatService {
 
       // 获取并处理响应
       int status = connection.getResponseCode();
+      log.info("gpt接口请求状态码：{}", status);
       Reader streamReader = null;
       boolean error = false;
       if (status > 299) {
         streamReader = new InputStreamReader(connection.getErrorStream());
         log.error("请求失败，状态码：{}", status);
-        error = true;
         answer = new Answer();
         answer.setFinished(true);
         answer.setSuccess(false);
         answer.setErrorCode(status);
         answer.setError(ErrorCode.errorCodes.get(status));
         TaskPool.addTask(new Task(process, answer, account.getAccount()));
+        error = true;
       } else {
         streamReader = new InputStreamReader(connection.getInputStream());
       }
@@ -168,16 +167,10 @@ public class ChatService {
       String line;
 
       int count = 0;
-      while ((line = reader.readLine()) != null && !error) {
+      while (!error && (line = reader.readLine()) != null) {
         if (line.isEmpty()) {
           continue;
         }
-//        if (error) {
-////          errorString.append(line);
-//          log.error(line);
-//          continue;
-////          continue;
-//        }
 
         try {
           count++;

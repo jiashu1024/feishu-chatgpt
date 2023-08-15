@@ -5,9 +5,9 @@ spring:
   application:
     name: feishubot
   redis:
-    host:
-    port: 6379
-    password:
+    host: ${SPRING_REDIS_HOST}
+    port: ${SPRING_REDIS_PORT}
+    password: ${SPRING_REDIS_PASSWORD}
     lettuce:
       pool:
         max-active: 8
@@ -16,10 +16,10 @@ spring:
         min-idle: 0
 
 my-config:
-  app-id:
-  app-secret:
-  encrypt-key:
-  verification-token:
+  app-id: 
+  app-secret: 
+  encrypt-key: 
+  verification-token: 
   proxy-url: http://rnproxy.zhangjiashu.tech
   user-name: admin
   password: admin
@@ -27,11 +27,5 @@ my-config:
 logging:
   level:
     root: info
-    com.zhangjiashu: debug
+    com.zjs.feishubot: debug
     com.lark.oapi.event.EventDispatcher: OFF
-
-
-
-
-
-
