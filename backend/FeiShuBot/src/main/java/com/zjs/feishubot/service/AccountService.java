@@ -15,6 +15,7 @@ import com.zjs.feishubot.entity.Result;
 import com.zjs.feishubot.entity.front.AccountStatistics;
 import com.zjs.feishubot.entity.gpt.Model;
 import com.zjs.feishubot.entity.gpt.Models;
+import com.zjs.feishubot.util.TaskPool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -147,7 +148,7 @@ public class AccountService {
     }
     updateAccountInfo(account);
 
-
+    TaskPool.addAccount(account.getAccount());
     log.info("add account success");
     return Result.success("添加成功");
   }

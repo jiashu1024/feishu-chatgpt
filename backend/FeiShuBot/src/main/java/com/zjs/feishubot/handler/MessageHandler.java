@@ -479,7 +479,7 @@ public class MessageHandler {
     }
 
     if (record.getStatus() != Status.RUNNING && !record.isUpdated()) {
-      log.info("服务完成,account: {} ,title:{},chatId:{}", account.getAccount(), title, chatId);
+      log.info("service finished,account: {} ,title:{},chatId:{}", account.getAccount(), title, chatId);
       recordService.updateRecord(record);
       record.setUpdated(true);
 //      accountService.removeBusyAccount(account.getAccount());

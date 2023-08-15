@@ -20,6 +20,7 @@ public class InitProjectListener implements ApplicationListener<ContextRefreshed
 
   @Override
   public void onApplicationEvent(ContextRefreshedEvent event) {
+    log.info("version : v2.0.0");
     List<Account> accounts = accountService.getAllAccountCheck();
     // List<Account> availableAccounts = accountService.getAvailableAccounts();
     int plusCount = 0;
@@ -41,7 +42,6 @@ public class InitProjectListener implements ApplicationListener<ContextRefreshed
     log.info("当前可用账号数量：{}", availableCount);
     log.info("当前可用plus账号数量：{}", plusCount);
     log.info("当前可用普通账号数量：{}", normalCount);
-
     TaskPool.init(accounts);
     TaskPool.runTask();
   }
