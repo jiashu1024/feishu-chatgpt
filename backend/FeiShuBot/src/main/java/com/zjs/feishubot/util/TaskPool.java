@@ -31,22 +31,27 @@ public class TaskPool {
 
   public static void addAccount(String account) {
     taskPool.put(account, new LinkedBlockingQueue<>());
+    run(account);
+  }
+
+  private static void run(String account) {
+    new Thread(() -> {
+      BlockingQueue<Task> queue = taskPool.get(account);
+      while (true) {
+        try {
+          Task task = queue.take();
+          task.run();
+        } catch (InterruptedException e) {
+          log.error("task pool error", e);
+        }
+      }
+    }).start();
   }
 
   public static void runTask() {
     Set<String> accounts = taskPool.keySet();
     for (String account : accounts) {
-      new Thread(() -> {
-        BlockingQueue<Task> queue = taskPool.get(account);
-        while (true) {
-          try {
-            Task task = queue.take();
-            task.run();
-          } catch (InterruptedException e) {
-            log.error("task pool error", e);
-          }
-        }
-      }).start();
+      run(account);
     }
   }
 
