@@ -49,8 +49,6 @@ public class MessageService {
    *
    * @param chatId 用于表示聊天的id
    * @param text   发送的文本
-   * @return
-   * @throws Exception
    */
   public CreateMessageResp sendTextMessageByChatId(String chatId, String text) throws Exception {
     CreateMessageReq req = createMessageReq("chat_id", chatId, "text", MessageContent.ofText(text));
@@ -58,8 +56,7 @@ public class MessageService {
   }
 
   private CreateMessageResp getCreateMessageResp(CreateMessageReq req) throws Exception {
-    CreateMessageResp resp = null;
-
+    CreateMessageResp resp;
     resp = client.im().message().create(req);
     if (!resp.success()) {
       log.error(String.format("code:%s,msg:%s,reqId:%s"
@@ -72,13 +69,8 @@ public class MessageService {
   /**
    * 发送卡片消息
    *
-   * @param chatId
-   * @param text
-   * @return
-   * @throws Exception
    */
   public CreateMessageResp sendCardMessage(String chatId, String text) throws Exception {
-    log.debug("发送回复消息，长度为：{}", text.length());
     CreateMessageReq messageReq = createMessageReq("chat_id", chatId, "interactive", text);
     return getCreateMessageResp(messageReq);
   }
@@ -86,13 +78,9 @@ public class MessageService {
   /**
    * 发送用户ChatGpt回复消息卡片的消息
    *
-   * @param chatId
-   * @param title
-   * @param answer
-   * @return
-   * @throws Exception
    */
   public CreateMessageResp sendGptAnswerMessage(String chatId, String title, String answer) throws Exception {
+    log.debug("发送回复消息，长度为：{}", answer.length());
     return sendCardMessage(chatId, MessageCard.ofGptAnswerMessageCard(title, answer));
   }
 
@@ -103,34 +91,21 @@ public class MessageService {
   /**
    * 修改类型为消息卡片的消息
    *
-   * @param messageId
-   * @param content
-   * @return
-   * @throws Exception
    */
   public PatchMessageResp modifyMessageCard(String messageId, String content) throws Exception {
-    log.debug("发送消息，长度为:{}",content.length());
     PatchMessageReq req = createPatchMessageReq(messageId, content);
     return client.im().message().patch(req);
   }
 
   /**
    * 修改用于ChatGpt回复的消息卡片的消息
-   *
-   * @param messageId
-   * @param title
-   * @param answer
-   * @return
-   * @throws Exception
    */
   public PatchMessageResp modifyGptAnswerMessageCard(String messageId, String title, String answer) throws Exception {
+    log.debug("修改卡片消息，长度为:{}",answer.length());
     return modifyMessageCard(messageId, MessageCard.ofGptAnswerMessageCard(title, answer));
   }
-
 
   public PatchMessageResp modifyGptAnswerMessageCardWithSelection(String messageId, String title, String answer, Map<String, String> selections) throws Exception {
     return modifyMessageCard(messageId, MessageCard.ofGptAnswerMessageCardWithSelection(title, answer, selections));
   }
-
-
 }

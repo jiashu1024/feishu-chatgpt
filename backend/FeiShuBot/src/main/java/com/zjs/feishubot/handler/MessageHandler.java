@@ -50,17 +50,16 @@ public class MessageHandler {
     String requestId = event.getRequestId();
     // 根据内存记录的消息事件id去重
     if (RequestIdSet.requestIdSet.contains(requestId)) {
-      //log.warn("重复请求，requestId:{}", requestId);
+      log.debug("重复请求，requestId:{}", requestId);
       return false;
     }
     RequestIdSet.requestIdSet.add(requestId);
-
     String createTime = event.getEvent().getMessage().getCreateTime();
     Long createTimeLong = Long.valueOf(createTime);
     Long now = System.currentTimeMillis();
     if (now - createTimeLong > 1000 * 20) {
       // 根据消息事件的创建时间去重
-      //log.warn("消息过期，requestId:{}", requestId);
+      log.debug("消息过期，requestId:{}", requestId);
       return false;
     }
 
@@ -75,7 +74,7 @@ public class MessageHandler {
 
     // 只处理私聊文本消息
     if (!chatType.equals("p2p") && !msgType.equals("text")) {
-      log.warn("不支持的ChatType或MsgType,ChatGpt不处理");
+      log.debug("不支持的ChatType或MsgType,ChatGpt不处理");
       return false;
     }
 
@@ -84,8 +83,13 @@ public class MessageHandler {
 
 
   public void process(P2MessageReceiveV1 event, String messageId) throws Exception {
+    log.debug("{} process the request event id",event.getRequestId());
     P2MessageReceiveV1Data messageEvent = event.getEvent();
     EventMessage message = messageEvent.getMessage();
+
+    if (messageId.equals("0")) {
+      log.debug("retry request");
+    }
 
     if (!checkInvalidEvent(event)) {
       return;
@@ -112,13 +116,9 @@ public class MessageHandler {
     //尝试从会话池中获取会话，从而保持上下文
     UserConversationConfig conversation = conversationPool.getConversation(chatId);
 
-
     boolean newChat = false;
-
     String model;
-
     Account account;
-
     Mode mode;
 
     if (conversation == null) {
@@ -226,26 +226,29 @@ public class MessageHandler {
         messageService.sendTextMessageByChatId(chatId, "目前无空闲该模型，请稍后再试，或者更换模型");
         return;
       }
-    }
 
 
-    //如果是fast模式，则需要切换账号服务
-    //此时所有账号都在忙，需要等待
-    if (conversation.getMode() == Mode.FAST) {
-      log.debug("fast 模式，尝试切换账号");
-      if (account == null || accountService.isBusy(account.getAccount())) {
-        //切换账号，且重试次数为 4 次
-        newChat = true;
-        messageService.sendTextMessageByChatId(chatId, "正在查找空闲账号...");
-        log.debug("正在查找空闲账号...");
-        int retry = 0;
-        while (retry < 4 && (account == null || account.isRunning())) {
-          log.debug("开始第{}次尝试查找可用空闲账号", retry + 1);
-          account = accountService.getFreeAccountByModelAndCheck(model, openId);
-          retry++;
+      //如果是fast模式，则需要切换账号服务
+      //此时所有账号都在忙，需要等待
+      if (conversation.getMode() == Mode.FAST) {
+        log.debug("fast 模式，尝试切换账号");
+        if (account == null || accountService.isBusy(account.getAccount())) {
+          //切换账号，且重试次数为 4 次
+          newChat = true;
+          messageService.sendTextMessageByChatId(chatId, "正在查找空闲账号...");
+          log.debug("正在查找空闲账号...");
+          int retry = 0;
+          while (retry < 4 && (account == null || account.isRunning())) {
+            log.debug("开始第{}次尝试查找可用空闲账号", retry + 1);
+            account = accountService.getFreeAccountByModelAndCheck(model, openId);
+            retry++;
+          }
         }
       }
     }
+
+
+
 
     if (account == null) {
       log.debug("目前无空闲账号");
