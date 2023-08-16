@@ -1,6 +1,4 @@
-1.
-
-浏览器登录[飞书](https://aiw8qncwo9a.feishu.cn/accounts/page/login?redirect_uri=https%3A%2F%2Faiw8qncwo9a.feishu.cn%2Fadmin%2Findex&app_id=13)
+1. 浏览器登录[飞书](https://aiw8qncwo9a.feishu.cn/accounts/page/login?redirect_uri=https%3A%2F%2Faiw8qncwo9a.feishu.cn%2Fadmin%2Findex&app_id=13)
 
 2. 创建新企业账号(个人用户无法使用应用机器人)
 
@@ -8,11 +6,11 @@
 
 3. [创建应用](https://open.feishu.cn/app?lang=zh-CN)
 
-​ 配置应用能力
+ 配置应用能力
 
 <img src="./assets/image-20230623033948491.png" alt="image-20230623033948491" style="zoom:25%;" />
 
-​ 配置Encrypt Key，自定义个密码输进去就ok了，后面配置文件要用
+ 配置Encrypt Key，自定义个密码输进去就ok了，后面配置文件要用
 
 <img src="./assets/image-20230623034003565.png" alt="image-20230623034003565" style="zoom:25%;" />
 
@@ -21,9 +19,20 @@
 
 <img src="./assets/image-20230623034018518.png" alt="image-20230623034018518" style="zoom:25%;" />
 
-填写accounts-sample.yaml文件
+填写application-sample.yaml配置文件，其中 redis 相关的如果用 docker 方式启动可以保持默认
 
-填写application-sample.yaml配置文件
+```shell
+my-config:
+  app-id:    #见下图   
+  app-secret:  #见下图
+  encrypt-key:  #见下图
+  verification-token:   #见下图
+  proxy-url: http://rnproxy.zhangjiashu.tech
+  user-name: admin   #前端页面的登录账号和密码
+  password: admin
+```
+
+
 
 <img src="./assets/image-20230623034037529.png" alt="image-20230623034037529" style="zoom:25%;" />
 
@@ -31,17 +40,24 @@
 
 配置文件的代理可选择默认用我的代理，或者自建 [教程](https://github.com/linweiyuan/go-chatgpt-api)
 
+前端配置.env文件
+
+```shell
+VUE_APP_API_BASE_URL=http://ip:9001/    #将 ip 换成服务器的 ip 就行
+```
+
+
+
 启动项目，项目根目录下运行
 
 ```shell
-chmod +x start-docker.sh
-sudo ./start-docker.sh
+sudo docker-compose up -d
 
 #查看日志
-sudo docker logs -f feishubot
+sudo docker-compose logs -f
 ```
 
-保证服务器防火墙端口9001打开
+保证服务器防火墙端口9001打开，前端需要放开 9002 端口
 
 浏览器打开输入http://ip:9001/ping，如果响应pong则9001端口打开了
 
@@ -75,4 +91,5 @@ sudo docker logs -f feishubot
 
 私聊即可使用
 
-更新项目重新运行start-docker.sh即可
+在前端项目的账号管理页面添加账号即可
+
