@@ -39,4 +39,9 @@ public class UserConversationConfig {
    * 是否是plus账号
    */
   private boolean isPlus;
+
+  /**
+   * 连续对话的次数
+   */
+  private int count;
 }

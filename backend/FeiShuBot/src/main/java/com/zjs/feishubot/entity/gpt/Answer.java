@@ -31,4 +31,18 @@ public class Answer {
    * 错误响应码
    */
   private int errorCode;
+
+  @Override
+  public String toString() {
+    return "Answer{" +
+      "seq=" + seq +
+      ", deal=" + deal +
+      ", success=" + success +
+      ", message=" + message +
+      ", conversationId='" + conversationId + '\'' +
+      ", error=" + error +
+      ", finished=" + finished +
+      ", errorCode=" + errorCode +
+      '}';
+  }
 }

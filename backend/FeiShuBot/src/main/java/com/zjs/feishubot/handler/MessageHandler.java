@@ -82,12 +82,12 @@ public class MessageHandler {
   }
 
 
-  public void process(P2MessageReceiveV1 event, String messageId) throws Exception {
+  public void process(P2MessageReceiveV1 event, String messageId,Record record) throws Exception {
     log.debug("{} process the request event id",event.getRequestId());
     P2MessageReceiveV1Data messageEvent = event.getEvent();
     EventMessage message = messageEvent.getMessage();
 
-    if (messageId.equals("0")) {
+    if (record != null) {
       log.debug("retry request");
     }
 
@@ -126,6 +126,7 @@ public class MessageHandler {
       //如果没有历史会话，新建会话，采用默认3.5的模型
       newChat = true;
       conversation = new UserConversationConfig();
+
       mode = Mode.FAST;
 
       long start = System.currentTimeMillis();
@@ -167,6 +168,7 @@ public class MessageHandler {
         //通过下拉选择框 建立新会话意图
         newChat = true;
         model = conversation.getModel();
+
         account = accountService.getFreeAccountByModelAndCheck(model, openId);
       } else {
         //已经有会话记录，继续会话
@@ -188,7 +190,6 @@ public class MessageHandler {
             messageService.sendTextMessageByChatId(chatId, "会话服务的gpt账号已经不可用");
             ok = false;
           }
-
           boolean havePermission = accountService.checkAccountPermission(openId, oldAccount, conversation.isPlus());
           if (!havePermission) {
             log.warn("会话服务的gpt账号{}未授权使用", conversation.getAccount());
@@ -252,19 +253,20 @@ public class MessageHandler {
       return;
     }
 
-    if (conversation.getMode() == Mode.FAST) {
-      //不是新会话下，有可能上次服务的账号不是 plus 账号，要切换到 plus 账号
-      //fast模式优先使用 plus 账号服务，因为 plus 的响应会快
-      if (!account.isPlusAccount() && !newChat) {
-        //List<Account> allAccountNoCheck = accountService.getAllAccountNoCheck();
-        Account newAccount = accountService.getFreeAccountByModelAndCheck(model, openId);
-        if (newAccount.isPlusAccount()) {
-          log.info("发现有可用 plus 账号，切换到 plus 账号服务");
-          account = newAccount;
-          newChat = true;
-        }
-      }
-    }
+//    注释，取消自动切换 plus 账号服务
+//    if (conversation.getMode() == Mode.FAST) {
+//      //不是新会话下，有可能上次服务的账号不是 plus 账号，要切换到 plus 账号
+//      //fast模式优先使用 plus 账号服务，因为 plus 的响应会快
+//      if (!account.isPlusAccount() && !newChat) {
+//        //List<Account> allAccountNoCheck = accountService.getAllAccountNoCheck();
+//        Account newAccount = accountService.getFreeAccountByModelAndCheck(model, openId);
+//        if (newAccount.isPlusAccount()) {
+//          log.info("发现有可用 plus 账号，切换到 plus 账号服务");
+//          account = newAccount;
+//          newChat = true;
+//        }
+//      }
+//    }
 
 
     String firstText = "正在生成中，请稍后...";
@@ -298,11 +300,28 @@ public class MessageHandler {
     conversation.setAccount(account.getAccount());
     accountService.addBusyAccount(account.getAccount());
 
+
+    //记录连续会话的次数
+    if (newChat) {
+      //新会话则连续次数为 1
+      conversation.setCount(1);
+    } else {
+      //老会话，要判断是重试还是非重试
+      //重试的请求则不需要增加连续次数
+      if (record == null) {
+        conversation.setCount(conversation.getCount() + 1);
+      }
+    }
+
     boolean isPlusModel = Models.plusModelTitle.contains(model);
 
-    log.debug("save record");
-    Record record = recordService.saveRecord(user, account, model, mode, text, null, Status.RUNNING, null, isPlusModel);
-
+    if (record == null) {
+      log.debug("save record");
+      record = recordService.saveRecord(user, account, model, mode, text, null, Status.RUNNING, null, isPlusModel);
+    } else {
+      record.setAccount(account.getAccount());
+      record.setPlusModel(isPlusModel);
+    }
 
     String title = model + " : " + account.getAccount();
 
@@ -312,8 +331,10 @@ public class MessageHandler {
     }
 
     if (conversation.getMode() == Mode.KEEP) {
-      title += "「" + mode + "」";
+      title += "「" + mode + "」 ";
     }
+
+    title +=  "-" + conversation.getCount() + "-";
 
 
     if (!messageId.equals("0")) {
@@ -341,16 +362,18 @@ public class MessageHandler {
     Account finalAccount = account;
     String finalMessageId = messageId;
     UserConversationConfig finalConversation = conversation;
+    Record finalRecord = record;
     if (newChat) {
       log.info("新建会话");
       conversation.setTitle(title);
+
       chatService.newChat(text, modelSlug, answer -> {
-        processAnswer(answer, finalTitle, chatId, finalAccount, finalMessageId, event, selections, record, finalConversation);
+        processAnswer(answer, finalTitle, chatId, finalAccount, finalMessageId, event, selections, finalRecord, finalConversation);
       }, account);
     } else {
       log.info("继续会话");
       chatService.keepChat(text, modelSlug, conversation.getParentMessageId(), conversation.getConversationId(), answer -> {
-        processAnswer(answer, finalTitle, chatId, finalAccount, finalMessageId, event, selections, record, finalConversation);
+        processAnswer(answer, finalTitle, chatId, finalAccount, finalMessageId, event, selections, finalRecord, finalConversation);
       }, account);
     }
   }
@@ -379,7 +402,7 @@ public class MessageHandler {
     return selections;
   }
 
-  private void retry(Account account, String chatId, P2MessageReceiveV1 event, String messageId) throws Exception {
+  private void retry(Account account, String chatId, P2MessageReceiveV1 event, String messageId,Record record) throws Exception {
     //重新处理该 event，删除去重记录
     accountService.addBusyAccount(account.getAccount());
     conversationPool.conversationMap.remove(chatId);
@@ -392,7 +415,7 @@ public class MessageHandler {
       }
     });
     RequestIdSet.requestIdSet.remove(event.getRequestId());
-    process(event, messageId);
+    process(event, messageId,record);
   }
 
   private void processAnswer(Answer answer, String title, String chatId, Account account, String messageId, P2MessageReceiveV1 event, Map<String, String> selections, Record record, UserConversationConfig conversationConfig) throws Exception {
@@ -409,7 +432,7 @@ public class MessageHandler {
         if (build.isAvailable()) {
 //          accountService.removeBusyAccount(account.getAccount());
           RequestIdSet.requestIdSet.remove(event.getRequestId());
-          process(event, messageId);
+          process(event, messageId,record);
           return;
         } else {
           messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, build.getError(), selections);
@@ -428,13 +451,13 @@ public class MessageHandler {
         //如果是 Fast 模式，需要重试
         if (conversationConfig.getMode() == Mode.FAST) {
           //重新处理该 event，删除去重记录
-          retry(account, chatId, event, messageId);
+          retry(account, chatId, event, messageId,record);
           return;
         }
       } else if (answer.getErrorCode() == ErrorCode.CONVERSATION_NOT_FOUNT) {
         if (conversationConfig.getMode() == Mode.FAST) {
           conversationPool.removeConversation(chatId);
-          retry(account, chatId, event, messageId);
+          retry(account, chatId, event, messageId,record);
           return;
         }
       }
