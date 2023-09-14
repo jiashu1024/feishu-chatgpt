@@ -18,7 +18,6 @@ public class ErrorCode {
    */
   public static final int CHAT_LIMIT = 4;
 
-
   public static final int RESPONSE_ERROR = 5;
 
   public static final int ACCOUNT_DEACTIVATED = 6;

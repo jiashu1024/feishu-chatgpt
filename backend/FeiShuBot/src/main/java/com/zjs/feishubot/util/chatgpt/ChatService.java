@@ -10,15 +10,17 @@ import com.zjs.feishubot.util.Task;
 import com.zjs.feishubot.util.TaskPool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.json.JSONObject;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -78,8 +80,13 @@ public class ChatService {
 
     String param = CreateConversationBody.of(messageId, content, parentMessageId, conversationId, model);
 
-    post(param, createConversationUrl, process, account);
 
+//    HttpRequest authorization = HttpRequest.post(createConversationUrl).header("Authorization", account.getToken()).body(param);
+//    HttpResponse execute = authorization.execute();
+//    System.out.println(execute.getStatus());
+//    System.out.println(execute.body());
+    request(param, createConversationUrl, process, account);
+    //post(param, createConversationUrl, process, account);
     lock.unlock();
   }
 
@@ -107,147 +114,232 @@ public class ChatService {
     chat(content, model, process, parentMessageId, conversationId, account);
   }
 
-//  public void genTitle(String conversationId) {
-//    String listUrl = proxyUrl + GEN_TITLE_URL + conversationId;
-//    HttpResponse response = HttpRequest.get(listUrl).header("Authorization", getToken()).execute();
-//    log.info(response.body());
-//  }
-//
-//
-//  public void getConversationList() {
-//    String listUrl = proxyUrl + LIST_URL;
-//    HttpResponse response = HttpRequest.get(listUrl).header("Authorization", getToken()).execute();
-//    System.out.println(response.body());
-//  }
-
   /**
-   * 向gpt发起请求
    *
-   * @param param   请求参数
-   * @param urlStr  请求的地址
-   * @param process 响应处理器
+   * @param param 请求参数
+   * @param urlStr 请求地址
+   * @param process 回答处理器
+   * @param account 对应的账号
    */
-  private void post(String param, String urlStr, AnswerProcess process, Account account) {
-    URL url = null;
-    Answer answer = null;
-    try {
-      url = new URL(urlStr);
-      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-      connection.setRequestMethod("POST");
-      connection.setRequestProperty("Accept", "application/json");
-      connection.setRequestProperty("Authorization", account.getToken());
-      connection.setRequestProperty("Content-Type", "application/json");
-      //设置请求体
-      connection.setDoOutput(true);
+  private void request(String param, String urlStr, AnswerProcess process, Account account) {
+    CloseableHttpClient httpClient = HttpClients.createDefault();
+    HttpPost request = new HttpPost(urlStr);
 
-      try (OutputStream output = connection.getOutputStream()) {
-        output.write(param.getBytes(StandardCharsets.UTF_8));
-      }
+    request.setHeader("Accept", "text/event-stream");
+    request.setHeader("Authorization", account.getToken());
+    request.setHeader("Content-Type", "application/json");
+    request.setEntity(new StringEntity(param, StandardCharsets.UTF_8));
 
-      // 获取并处理响应
-      int status = connection.getResponseCode();
-      log.info("gpt接口请求状态码：{}", status);
-      Reader streamReader = null;
-      boolean error = false;
-      if (status > 299) {
-        streamReader = new InputStreamReader(connection.getErrorStream());
-        log.error("请求失败，状态码：{}", status);
-        answer = new Answer();
+    try (CloseableHttpResponse response = httpClient.execute(request)) {
+      // 处理响应
+      if (response.getStatusLine().getStatusCode() == 200) {
+        // 从响应获取输入流，并处理SSE事件
+        try (InputStream inputStream = response.getEntity().getContent()) {
+          handleSseEvents(inputStream, process, account);
+        }
+      } else {
+        // 处理错误响应
+        log.error("请求失败，状态码：{}", response.getStatusLine().getStatusCode());
+        log.error("请求地址:" + urlStr);
+        log.error("请求参数：" + param);
+        log.error("响应内容：{}", response.getEntity().getContent());
+        Answer answer = new Answer();
         answer.setFinished(true);
         answer.setSuccess(false);
-        answer.setErrorCode(status);
-        answer.setError(ErrorCode.errorCodes.get(status));
+        answer.setErrorCode(response.getStatusLine().getStatusCode());
+        answer.setError(response.getEntity().getContent());
         TaskPool.addTask(new Task(process, answer, account.getAccount()));
-        error = true;
-      } else {
-        streamReader = new InputStreamReader(connection.getInputStream());
       }
-
-      BufferedReader reader = new BufferedReader(streamReader);
-      String line;
-
-      int count = 0;
-      while (!error && (line = reader.readLine()) != null) {
-        if (line.isEmpty()) {
-          continue;
-        }
-
-        try {
-          count++;
-          answer = parse(line, account);
-
-          if (answer == null) {
-            continue;
-          }
-          if (!answer.isDeal()) {
-            continue;
-          }
-
-          answer.setSeq(count);
-          //每10行 才处理一次 为了防止飞书发消息太快被限制频率
-          if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
-            continue;
-          }
-
-          if (answer.isSuccess() && !answer.getMessage().getAuthor().getRole().equals("assistant")) {
-            continue;
-          }
-
-          //异步处理
-          TaskPool.addTask(new Task(process, answer, account.getAccount()));
-        } catch (Exception e) {
-          log.error("解析ChatGpt响应出错", e);
-          log.error("响应内容：[{}]", line);
-        }
-      }
-
-      //解除账号繁忙状态
-      accountService.removeBusyAccount(account.getAccount());
-
-//      if (error) {
-//        answer = new Answer();
-//        answer.setError(errorString.toString());
-//        answer.setErrorCode(ErrorCode.RESPONSE_ERROR);
-//        answer.setSuccess(false);
-//
-//        try {
-//          JSONObject jsonObject = new JSONObject(errorString.toString());
-//          String detail = jsonObject.optString("detail");
-//          if (detail != null) {
-//            JSONObject detailObject = new JSONObject(detail);
-//            String code = detailObject.optString("code");
-//            if (code.equals("account_deactivated")) {
-//              answer.setErrorCode(ErrorCode.ACCOUNT_DEACTIVATED);
-//            } else if (detail.contains("Only one message")) {
-//              log.warn("账号{}忙碌中", account);
-//              answer.setErrorCode(ErrorCode.BUSY);
-//              answer.setError(detail);
-//            }
-//
-//            if (code.equals("conversation_not_found")) {
-//              answer.setErrorCode(ErrorCode.CONVERSATION_NOT_FOUNT);
-//              answer.setError(detail);
-//            }
-//          }
-//
-//        } catch (JSONException ignored) {
-//        }
-//        TaskPool.addTask(new Task(process, answer, account.getAccount()));
-//      }
-
-      reader.close();
-      connection.disconnect();
-    } catch (Exception e) {
+    } catch (IOException e) {
       log.error("请求出错", e);
+      // 处理异常
+    } catch (InterruptedException e) {
+        throw new RuntimeException(e);
     }
   }
 
+  private void handleSseEvents(InputStream inputStream, AnswerProcess process, Account account) throws IOException {
+    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+    String line;
 
-  private Answer parse(String body, Account account) {
+    int count = 0;
+    Answer answer;
+
+    while ((line = reader.readLine()) != null) {
+
+      try {
+        answer = parse(line, account);
+        if (answer == null) {
+          continue;
+        }
+        count++;
+        if (!answer.isDeal()) {
+          continue;
+        }
+
+        answer.setSeq(count);
+        //每10行 才处理一次 为了防止飞书发消息太快被限制频率
+        if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
+          continue;
+        }
+        if (answer.isSuccess() && !answer.getMessage().getAuthor().getRole().equals("assistant")) {
+          continue;
+        }
+        //异步处理
+        TaskPool.addTask(new Task(process, answer, account.getAccount()));
+      } catch (Exception e) {
+        log.error("解析ChatGpt响应出错", e);
+        log.error("响应内容：[{}]", line);
+      }
+    }
+    accountService.removeBusyAccount(account.getAccount());
+  }
+
+
+//  /**
+//   * 向gpt发起请求
+//   *
+//   * @param param   请求参数
+//   * @param urlStr  请求的地址
+//   * @param process 响应处理器
+//   */
+//  private void post(String param, String urlStr, AnswerProcess process, Account account) {
+//    URL url = null;
+//    Answer answer = null;
+//    try {
+//      url = new URL(urlStr);
+//      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//      connection.setRequestMethod("POST");
+//      connection.setRequestProperty("Accept", "text/event-stream");
+//      connection.setRequestProperty("Authorization", account.getToken());
+//      connection.setRequestProperty("Content-Type", "application/json");
+//      //设置请求体
+//      connection.setDoOutput(true);
+//
+//      try (OutputStream output = connection.getOutputStream()) {
+//        output.write(param.getBytes(StandardCharsets.UTF_8));
+//      }
+//
+//
+//      // 获取并处理响应
+//      int status = connection.getResponseCode();
+//      log.info("gpt接口请求状态码：{}", status);
+//      Reader streamReader = null;
+//      boolean error = false;
+//      if (status > 299) {
+//        streamReader = new InputStreamReader(connection.getErrorStream());
+//        log.error("请求失败，状态码：{}", status);
+//        answer = new Answer();
+//        answer.setFinished(true);
+//        answer.setSuccess(false);
+//        answer.setErrorCode(status);
+//        answer.setError(ErrorCode.errorCodes.get(status));
+//
+//        error = true;
+//      } else {
+//        streamReader = new InputStreamReader(connection.getInputStream());
+//      }
+//
+//      BufferedReader reader = new BufferedReader(streamReader);
+//      String line;
+//
+//      int count = 0;
+//
+//      StringBuilder sb = new StringBuilder();
+//      while (error && (line = reader.readLine()) != null) {
+//        sb.append(line);
+//      }
+//      if (error) {
+//        if (answer.getError() == null) {
+//          answer.setError(sb.toString());
+//        }
+//        log.error("请求失败");
+//        log.error("请求地址:" + urlStr);
+//        log.error("请求参数：" + param);
+//        log.error("响应内容：{}", sb);
+//        TaskPool.addTask(new Task(process, answer, account.getAccount()));
+//      }
+//
+//      while (!error && (line = reader.readLine()) != null) {
+//        if (line.isEmpty()) {
+//          continue;
+//        }
+//        try {
+//          count++;
+//          answer = parse(line, account);
+//
+//          if (answer == null) {
+//            continue;
+//          }
+//          if (!answer.isDeal()) {
+//            continue;
+//          }
+//
+//          answer.setSeq(count);
+//          //每10行 才处理一次 为了防止飞书发消息太快被限制频率
+//          if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
+//            continue;
+//          }
+//
+//          if (answer.isSuccess() && !answer.getMessage().getAuthor().getRole().equals("assistant")) {
+//            continue;
+//          }
+//
+//          //异步处理
+//          TaskPool.addTask(new Task(process, answer, account.getAccount()));
+//        } catch (Exception e) {
+//          log.error("解析ChatGpt响应出错", e);
+//          log.error("响应内容：[{}]", line);
+//        }
+//      }
+//
+//      //解除账号繁忙状态
+//      accountService.removeBusyAccount(account.getAccount());
+//
+////      if (error) {
+////        answer = new Answer();
+////        answer.setError(errorString.toString());
+////        answer.setErrorCode(ErrorCode.RESPONSE_ERROR);
+////        answer.setSuccess(false);
+////
+////        try {
+////          JSONObject jsonObject = new JSONObject(errorString.toString());
+////          String detail = jsonObject.optString("detail");
+////          if (detail != null) {
+////            JSONObject detailObject = new JSONObject(detail);
+////            String code = detailObject.optString("code");
+////            if (code.equals("account_deactivated")) {
+////              answer.setErrorCode(ErrorCode.ACCOUNT_DEACTIVATED);
+////            } else if (detail.contains("Only one message")) {
+////              log.warn("账号{}忙碌中", account);
+////              answer.setErrorCode(ErrorCode.BUSY);
+////              answer.setError(detail);
+////            }
+////
+////            if (code.equals("conversation_not_found")) {
+////              answer.setErrorCode(ErrorCode.CONVERSATION_NOT_FOUNT);
+////              answer.setError(detail);
+////            }
+////          }
+////
+////        } catch (JSONException ignored) {
+////        }
+////        TaskPool.addTask(new Task(process, answer, account.getAccount()));
+////      }
+//
+//      reader.close();
+//      connection.disconnect();
+//    } catch (Exception e) {
+//      log.error("请求出错", e);
+//    }
+//  }
+
+
+  private static Answer parse(String body, Account account) {
 
     Answer answer;
 
-    if (body.equals("data: [DONE]")) {
+    if (body.equals("data: [DONE]") || body.isEmpty()) {
       return null;
     }
     if (body.startsWith("data:")) {
@@ -292,29 +384,29 @@ public class ChatService {
       if (detail != null && detail.contains("code")) {
         JSONObject error = jsonObject.optJSONObject("detail");
         String code = (String) error.opt("code");
-          switch (code) {
-              case "invalid_jwt":
-                  answer.setErrorCode(ErrorCode.INVALID_JWT);
-                  break;
-              case "invalid_api_key":
-                  answer.setErrorCode(ErrorCode.INVALID_API_KEY);
-                  break;
-              case "model_cap_exceeded":
-                  answer.setErrorCode(ErrorCode.CHAT_LIMIT);
-                  break;
-              case "account_deactivated":
-                  answer.setErrorCode(ErrorCode.ACCOUNT_DEACTIVATED);
-                  break;
-              case "conversation_not_found":
-                  answer.setErrorCode(ErrorCode.CONVERSATION_NOT_FOUNT);
-                  answer.setError(detail);
-                  break;
-              default:
-                  log.error("未知错误：" + body);
-                  answer.setError(body);
+        switch (code) {
+          case "invalid_jwt":
+            answer.setErrorCode(ErrorCode.INVALID_JWT);
+            break;
+          case "invalid_api_key":
+            answer.setErrorCode(ErrorCode.INVALID_API_KEY);
+            break;
+          case "model_cap_exceeded":
+            answer.setErrorCode(ErrorCode.CHAT_LIMIT);
+            break;
+          case "account_deactivated":
+            answer.setErrorCode(ErrorCode.ACCOUNT_DEACTIVATED);
+            break;
+          case "conversation_not_found":
+            answer.setErrorCode(ErrorCode.CONVERSATION_NOT_FOUNT);
+            answer.setError(detail);
+            break;
+          default:
+            log.error("未知错误：" + body);
+            answer.setError(body);
 //                  log.warn("账号{} token失效", account);
-                  break;
-          }
+            break;
+        }
         answer.setError(error.get("message"));
         return answer;
       }

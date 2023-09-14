@@ -256,7 +256,7 @@ public class AccountService {
 
     if (plus) {
       //需要plus模型，则只能从plus账号池里选
-      if (plusAccounts.size() > 0) {
+      if (!plusAccounts.isEmpty()) {
         //优先选择自己配置的号
         for (Account plusAccount : plusAccounts) {
           if (plusAccount.getOwnerOpenId().equals(userOpenId)) {
@@ -270,7 +270,7 @@ public class AccountService {
       }
     } else {
       //不是plus模型，先选plus账号的，如果没有再选normal账号的
-      if (plusAccounts.size() > 0) {
+      if (!plusAccounts.isEmpty()) {
         //优先自己配置的
         for (Account plusAccount : plusAccounts) {
           if (plusAccount.getOwnerOpenId().equals(userOpenId)) {
@@ -280,7 +280,7 @@ public class AccountService {
         //随机选择一个
         return plusAccounts.get((int) (Math.random() * plusAccounts.size()));
       } else {
-        if (freeAccounts.size() > 0) {
+        if (!freeAccounts.isEmpty()) {
           //优先自己配置的
           for (Account freeAccount : freeAccounts) {
             if (freeAccount.getOwnerOpenId().equals(userOpenId)) {
@@ -324,6 +324,13 @@ public class AccountService {
     for (Object accountObj : accountsMap.values()) {
       Account account = (Account) accountObj;
       String token = getToken(account.getAccount());
+      if (token == null) {
+//        AccountService
+        RequestResult login = login(account.getAccount(), account.getPassword());
+        if (login.isSuccess()) {
+          token = login.getData();
+        }
+      }
       account.setToken(token);
       accounts.add(account);
     }
@@ -349,6 +356,7 @@ public class AccountService {
     Map<String, Account> map = new HashMap<>();
     for (Account accountInfo : accountInfos) {
       map.put(accountInfo.getAccount(), accountInfo);
+      updateTokenForAccount(accountInfo.getAccount(), accountInfo.getToken());
     }
     accountsMap.putAllAsync(map);
   }
@@ -395,7 +403,7 @@ public class AccountService {
     String body = response.body();
     JSONObject jsonObject = new JSONObject(body);
     String models = jsonObject.optString("models");
-    if (models == null || models.length() == 0) {
+    if (models == null || models.isEmpty()) {
       log.warn("账号{}查询模型解析失败 : {}", account.getAccount(), body);
       JSONObject detail = jsonObject.optJSONObject("detail");
       if (detail != null) {

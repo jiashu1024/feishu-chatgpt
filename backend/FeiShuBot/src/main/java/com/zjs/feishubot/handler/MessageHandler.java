@@ -42,9 +42,6 @@ public class MessageHandler {
 
   /**
    * 飞书推送事件会重复，用于去重
-   *
-   * @param event
-   * @return
    */
   private boolean checkInvalidEvent(P2MessageReceiveV1 event) {
     String requestId = event.getRequestId();
@@ -82,8 +79,8 @@ public class MessageHandler {
   }
 
 
-  public void process(P2MessageReceiveV1 event, String messageId,Record record) throws Exception {
-    log.debug("{} process the request event id",event.getRequestId());
+  public void process(P2MessageReceiveV1 event, String messageId, Record record) throws Exception {
+    log.debug("{} process the request event id", event.getRequestId());
     P2MessageReceiveV1Data messageEvent = event.getEvent();
     EventMessage message = messageEvent.getMessage();
 
@@ -232,19 +229,17 @@ public class MessageHandler {
       //如果是fast模式，则需要切换账号服务
       if (conversation.getMode() == Mode.FAST) {
         log.debug("fast 模式，尝试切换账号");
-          newChat = true;
-          messageService.sendTextMessageByChatId(chatId, "正在查找空闲账号...");
-          log.debug("正在查找空闲账号...");
-          int retry = 0;
-          while (retry < 4 && (account == null || account.isRunning())) {
-            log.debug("开始第{}次尝试查找可用空闲账号", retry + 1);
-            account = accountService.getFreeAccountByModelAndCheck(model, openId);
-            retry++;
-          }
+        newChat = true;
+        messageService.sendTextMessageByChatId(chatId, "正在查找空闲账号...");
+        log.debug("正在查找空闲账号...");
+        int retry = 0;
+        while (retry < 4 && (account == null || account.isRunning())) {
+          log.debug("开始第{}次尝试查找可用空闲账号", retry + 1);
+          account = accountService.getFreeAccountByModelAndCheck(model, openId);
+          retry++;
+        }
       }
     }
-
-
 
 
     if (account == null) {
@@ -334,7 +329,7 @@ public class MessageHandler {
       title += "「" + mode + "」 ";
     }
 
-    title +=  "-" + conversation.getCount() + "-";
+    title += "-" + conversation.getCount() + "-";
 
 
     if (!messageId.equals("0")) {
@@ -402,7 +397,7 @@ public class MessageHandler {
     return selections;
   }
 
-  private void retry(Account account, String chatId, P2MessageReceiveV1 event, String messageId,Record record) throws Exception {
+  private void retry(Account account, String chatId, P2MessageReceiveV1 event, String messageId, Record record) throws Exception {
     //重新处理该 event，删除去重记录
     accountService.addBusyAccount(account.getAccount());
     conversationPool.conversationMap.remove(chatId);
@@ -415,11 +410,11 @@ public class MessageHandler {
       }
     });
     RequestIdSet.requestIdSet.remove(event.getRequestId());
-    process(event, messageId,record);
+    process(event, messageId, record);
   }
 
   private void processAnswer(Answer answer, String title, String chatId, Account account, String messageId, P2MessageReceiveV1 event, Map<String, String> selections, Record record, UserConversationConfig conversationConfig) throws Exception {
-    log.debug("process answer : {}",answer);
+    log.debug("process answer : {}", answer);
     if (!answer.isSuccess()) {
       // gpt请求失败
       selections.remove("使用当前上下文");
@@ -432,7 +427,7 @@ public class MessageHandler {
         if (build.isAvailable()) {
 //          accountService.removeBusyAccount(account.getAccount());
           RequestIdSet.requestIdSet.remove(event.getRequestId());
-          process(event, messageId,record);
+          process(event, messageId, record);
           return;
         } else {
           messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, build.getError(), selections);
@@ -451,15 +446,18 @@ public class MessageHandler {
         //如果是 Fast 模式，需要重试
         if (conversationConfig.getMode() == Mode.FAST) {
           //重新处理该 event，删除去重记录
-          retry(account, chatId, event, messageId,record);
+          retry(account, chatId, event, messageId, record);
           return;
         }
       } else if (answer.getErrorCode() == ErrorCode.CONVERSATION_NOT_FOUNT) {
         if (conversationConfig.getMode() == Mode.FAST) {
           conversationPool.removeConversation(chatId);
-          retry(account, chatId, event, messageId,record);
+          retry(account, chatId, event, messageId, record);
           return;
         }
+      } else {
+        //TODO unknown error code
+//        messageService.sendCardMessage(chatId,"unknown error code" + answer.getErrorCode());
       }
       messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, (String) answer.getError(), selections);
 
