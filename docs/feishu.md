@@ -27,7 +27,7 @@ my-config:
   app-secret:  #见下图
   encrypt-key:  #见下图
   verification-token:   #见下图
-  proxy-url: http://rnproxy.zhangjiashu.tech
+  proxy-url: http://rnproxy.zhangjiashu.tech #已挂，自建或者使用别人的
   user-name: admin   #前端页面的登录账号和密码
   password: admin
 ```
@@ -38,7 +38,7 @@ my-config:
 
 
 
-配置文件的代理可选择默认用我的代理，或者自建 [教程](https://github.com/linweiyuan/go-chatgpt-api)
+配置文件的代理可选择默认用我的代理(已经挂掉)，或者自建，相关项目链接： [教程](https://github.com/linweiyuan/go-chatgpt-api)
 
 前端配置.env文件
 
