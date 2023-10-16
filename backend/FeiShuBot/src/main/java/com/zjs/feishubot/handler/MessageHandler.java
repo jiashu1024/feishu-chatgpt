@@ -5,6 +5,7 @@ import com.lark.oapi.Client;
 import com.lark.oapi.service.contact.v3.model.User;
 import com.lark.oapi.service.im.v1.model.*;
 import com.zjs.feishubot.entity.*;
+import com.zjs.feishubot.entity.Record;
 import com.zjs.feishubot.entity.gpt.Answer;
 import com.zjs.feishubot.entity.gpt.ErrorCode;
 import com.zjs.feishubot.entity.gpt.Models;
@@ -330,7 +331,6 @@ public class MessageHandler {
     }
 
     title += "-" + conversation.getCount() + "-";
-
 
     if (!messageId.equals("0")) {
       messageService.modifyGptAnswerMessageCard(messageId, title, firstText);

@@ -29,12 +29,6 @@ public class EventController {
 
   protected final MessageHandler messageHandler;
 
-//  @Value("${feishu.verificationToken}")
-//  private String verificationToken;
-//
-//  @Value("${feishu.encryptKey}")
-//  private String encryptionKey;
-
   protected final MyConfig myConfig;
 
   private EventDispatcher EVENT_DISPATCHER;
