@@ -10,11 +10,13 @@ import com.zjs.feishubot.util.Task;
 import com.zjs.feishubot.util.TaskPool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -142,13 +144,20 @@ public class ChatService {
         log.error("请求失败，状态码：{}", response.getStatusLine().getStatusCode());
         log.error("请求地址:" + urlStr);
         log.error("请求参数：" + param);
-        log.error("响应内容：{}", response.getEntity().getContent());
+
         Answer answer = new Answer();
         answer.setFinished(true);
         answer.setSuccess(false);
         answer.setErrorCode(response.getStatusLine().getStatusCode());
-        answer.setError(response.getEntity().getContent());
+        //获取错误信息
+        HttpEntity entity = response.getEntity();
+        if (entity != null) {
+          String responseBody = EntityUtils.toString(entity, "UTF-8");
+          answer.setError(responseBody);
+          log.error("响应内容：{}", responseBody);
+        }
         TaskPool.addTask(new Task(process, answer, account.getAccount()));
+        accountService.removeBusyAccount(account.getAccount());
       }
     } catch (IOException e) {
       log.error("请求出错", e);
@@ -178,7 +187,7 @@ public class ChatService {
         }
 
         answer.setSeq(count);
-        //每10行 才处理一次 为了防止飞书发消息太快被限制频率
+        //每10次事件推送 才向飞书发送一次 为了防止飞书发消息太快被限制频率
         if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
           continue;
         }

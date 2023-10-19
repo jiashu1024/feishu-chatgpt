@@ -41,8 +41,8 @@ public class TaskPool {
         try {
           Task task = queue.take();
           task.run();
-        } catch (InterruptedException e) {
-          log.error("task pool error", e);
+        } catch (Exception e) {
+          log.error("task run error", e);
         }
       }
     }).start();
