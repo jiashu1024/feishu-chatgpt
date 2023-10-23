@@ -20,7 +20,7 @@ public class ConversationPool {
 
   public void addConversation(String chatId, UserConversationConfig conversation) {
 //        log.info("chatId:{} 会话变更前:{}", chatId, conversationMap.get(chatId));
-//        log.info("chatId:{} 会话变更后:{}", chatId, conversation);
+    log.info("chatId:{} 会话服务变更 —> {}", chatId, conversation);
     conversationMap.put(chatId, conversation);
   }
 

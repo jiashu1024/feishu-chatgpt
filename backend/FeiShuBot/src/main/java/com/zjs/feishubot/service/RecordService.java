@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import com.lark.oapi.service.contact.v3.model.User;
 import com.zjs.feishubot.config.KeyGenerateConfig;
 import com.zjs.feishubot.entity.*;
+import com.zjs.feishubot.entity.Record;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RMap;
 import org.redisson.api.RScoredSortedSet;

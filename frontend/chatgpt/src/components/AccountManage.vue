@@ -389,7 +389,7 @@ export default {
           delete this.ruleForm.creator;
           addAccount(this.ruleForm)
             .then((res) => {
-              console.log(res);
+              // console.log(res);
               if (res.status == 200) {
                 let data = res.data;
                 if (data.success) {
@@ -397,6 +397,7 @@ export default {
                     message: data.message,
                     type: "success",
                   });
+                  this.clickAddAccountBottonLoading = false;
                   this.addAccountVisible = false;
                   this.ruleForm = {};
                   this.plusTransferData = [];

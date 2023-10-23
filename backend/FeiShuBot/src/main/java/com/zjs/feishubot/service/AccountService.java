@@ -418,11 +418,11 @@ public class AccountService {
 
     JSONArray objects = JSONUtil.parseArray(models);
 
-
     List<Model> list = JSONUtil.toList(objects, Model.class);
     boolean plus = false;
     for (Model model : list) {
       Models.modelMap.put(model.getTitle(), model);
+      redissonClient.getSet(KeyGenerateConfig.MODEL_SET_KEY).addAsync(model.getTitle());
       if (model.getSlug().startsWith("gpt-4")) {
         Models.plusModelTitle.add(model.getTitle());
         plus = true;

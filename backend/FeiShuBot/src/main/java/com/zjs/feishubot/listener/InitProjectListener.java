@@ -20,7 +20,7 @@ public class InitProjectListener implements ApplicationListener<ContextRefreshed
 
   @Override
   public void onApplicationEvent(ContextRefreshedEvent event) {
-    log.info("version : v2.0.2");
+    log.info("version : v2.0.6");
     List<Account> accounts = accountService.getAllAccountCheck();
     // List<Account> availableAccounts = accountService.getAvailableAccounts();
     int plusCount = 0;

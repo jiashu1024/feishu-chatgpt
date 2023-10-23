@@ -10,19 +10,23 @@ import com.zjs.feishubot.util.Task;
 import com.zjs.feishubot.util.TaskPool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -115,9 +119,8 @@ public class ChatService {
   }
 
   /**
-   *
-   * @param param 请求参数
-   * @param urlStr 请求地址
+   * @param param   请求参数
+   * @param urlStr  请求地址
    * @param process 回答处理器
    * @param account 对应的账号
    */
@@ -142,19 +145,26 @@ public class ChatService {
         log.error("请求失败，状态码：{}", response.getStatusLine().getStatusCode());
         log.error("请求地址:" + urlStr);
         log.error("请求参数：" + param);
-        log.error("响应内容：{}", response.getEntity().getContent());
+
         Answer answer = new Answer();
         answer.setFinished(true);
         answer.setSuccess(false);
         answer.setErrorCode(response.getStatusLine().getStatusCode());
-        answer.setError(response.getEntity().getContent());
+        //获取错误信息
+        HttpEntity entity = response.getEntity();
+        if (entity != null) {
+          String responseBody = EntityUtils.toString(entity, "UTF-8");
+          answer.setError(responseBody);
+          log.error("响应内容：{}", responseBody);
+        }
         TaskPool.addTask(new Task(process, answer, account.getAccount()));
+        accountService.removeBusyAccount(account.getAccount());
       }
     } catch (IOException e) {
       log.error("请求出错", e);
       // 处理异常
     } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -168,6 +178,7 @@ public class ChatService {
     while ((line = reader.readLine()) != null) {
 
       try {
+//        log.debug("line:  " + line);
         answer = parse(line, account);
         if (answer == null) {
           continue;
@@ -178,7 +189,7 @@ public class ChatService {
         }
 
         answer.setSeq(count);
-        //每10行 才处理一次 为了防止飞书发消息太快被限制频率
+        //每10次事件推送 才向飞书发送一次 为了防止飞书发消息太快被限制频率
         if (answer.isSuccess() && !answer.isFinished() && count % 10 != 0) {
           continue;
         }
@@ -347,6 +358,21 @@ public class ChatService {
       body = body.substring(body.indexOf("{"));
       answer = JSONUtil.toBean(body, Answer.class);
       answer.setSuccess(true);
+      String error = (String) answer.getError();
+
+      if (("Our systems have detected unusual activity from your system. Please try again later.".equals(error))) {
+        answer.setSuccess(false);
+        answer.setErrorCode(ErrorCode.DETECTED_UNUSUAL_ACTIVITY);
+        answer.setError(ErrorCode.errorCodes.get(ErrorCode.DETECTED_UNUSUAL_ACTIVITY));
+        answer.setDeal(true);
+        return answer;
+      } else if (StringUtils.hasText(error)) {
+        answer.setSuccess(false);
+        answer.setError(error);
+        answer.setErrorCode(ErrorCode.RESPONSE_ERROR);
+        answer.setDeal(true);
+        return answer;
+      }
 
       Message message1 = answer.getMessage();
       if (message1 == null) {

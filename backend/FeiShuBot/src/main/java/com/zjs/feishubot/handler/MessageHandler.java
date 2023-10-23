@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.contact.v3.model.User;
 import com.lark.oapi.service.im.v1.model.*;
+import com.zjs.feishubot.entity.Record;
 import com.zjs.feishubot.entity.*;
 import com.zjs.feishubot.entity.gpt.Answer;
 import com.zjs.feishubot.entity.gpt.ErrorCode;
@@ -331,7 +332,6 @@ public class MessageHandler {
 
     title += "-" + conversation.getCount() + "-";
 
-
     if (!messageId.equals("0")) {
       messageService.modifyGptAnswerMessageCard(messageId, title, firstText);
     } else {
@@ -445,6 +445,8 @@ public class MessageHandler {
       } else if (answer.getErrorCode() == ErrorCode.BUSY) {
         //如果是 Fast 模式，需要重试
         if (conversationConfig.getMode() == Mode.FAST) {
+          messageService.sendTextMessageByChatId(chatId, "当前账号繁忙，正在为你切换账号...");
+          //  messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, "当前账号繁忙，正在为你切换账号...", selections);
           //重新处理该 event，删除去重记录
           retry(account, chatId, event, messageId, record);
           return;
@@ -452,21 +454,37 @@ public class MessageHandler {
       } else if (answer.getErrorCode() == ErrorCode.CONVERSATION_NOT_FOUNT) {
         if (conversationConfig.getMode() == Mode.FAST) {
           conversationPool.removeConversation(chatId);
+          messageService.sendTextMessageByChatId(chatId, "上次会话丢失，将重新建立新的会话");
+          //messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, "上次回话丢失，将重新建立新的会话", selections);
           retry(account, chatId, event, messageId, record);
           return;
         }
+      } else if (answer.getErrorCode() == ErrorCode.RESPONSE_ERROR) {
+//        messageService.sendTextMessageByChatId()
+        messageService.sendTextAdminMessage(answer.toString());
+      } else if (answer.getErrorCode() == ErrorCode.DETECTED_UNUSUAL_ACTIVITY) {
+        messageService.sendTextAdminMessage(account.getAccount() + " " + answer);
+        account.setAvailable(false);
+        account.setError(ErrorCode.map.get(ErrorCode.DETECTED_UNUSUAL_ACTIVITY));
+        accountService.updateAccountInfo(account);
+        conversationPool.removeConversation(chatId);
+        messageService.sendTextMessageByChatId(chatId, "服务异常，将重新建立新的会话");
+        retry(account, chatId, event, messageId, record);
+        return;
       } else {
         //TODO unknown error code
 //        messageService.sendCardMessage(chatId,"unknown error code" + answer.getErrorCode());
       }
-      messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, (String) answer.getError(), selections);
+      String tips = ErrorCode.errorCodes.get(answer.getErrorCode());
+      if (tips == null) {
+        tips = "向ChatGPT请求结果发生未知错误";
+      }
+      messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, tips, selections);
 
       record.setAnswer(null);
       record.setStatus(Status.FAILED);
       record.setErrorMessage((String) answer.getError());
       accountService.removeBusyAccount(account.getAccount());
-
-
     } else {
       // gpt请求成功
       UserConversationConfig conversation = conversationPool.getConversation(chatId);
@@ -477,7 +495,6 @@ public class MessageHandler {
         record.setAnswer(answer.getAnswer());
         record.setStatus(Status.SUCCESS);
         record.setErrorMessage(null);
-//        accountService.removeBusyAccount(account.getAccount());
       }
 
       selections.put("使用当前上下文", JSONUtil.toJsonStr(conversation));
@@ -503,7 +520,6 @@ public class MessageHandler {
       log.info("service finished,account: {} ,title:{},chatId:{}", account.getAccount(), title, chatId);
       recordService.updateRecord(record);
       record.setUpdated(true);
-//      accountService.removeBusyAccount(account.getAccount());
     }
 
 

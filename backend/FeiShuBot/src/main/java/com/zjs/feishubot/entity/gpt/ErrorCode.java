@@ -13,12 +13,14 @@ public class ErrorCode {
   public static final int BUSY = 429;
   public static final int INVALID_API_KEY = 3;
 
+  public static final int DETECTED_UNUSUAL_ACTIVITY = 601;
+
   /**
    * 4.0  3小时25次的对话限制
    */
   public static final int CHAT_LIMIT = 4;
 
-  public static final int RESPONSE_ERROR = 5;
+  public static final int RESPONSE_ERROR = 600;
 
   public static final int ACCOUNT_DEACTIVATED = 6;
 
@@ -38,6 +40,8 @@ public class ErrorCode {
     errorCodes.put(401,"账号 token 过期");
     errorCodes.put(429,"账号繁忙中");
     errorCodes.put(404,"未发现该会话");
+    errorCodes.put(601,"Our systems have detected unusual activity from your system. Please try again later. 代理异常");
+    errorCodes.put(600,"响应错误");
   }
 
 

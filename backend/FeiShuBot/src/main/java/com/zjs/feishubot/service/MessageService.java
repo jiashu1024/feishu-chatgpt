@@ -1,7 +1,9 @@
 package com.zjs.feishubot.service;
 
 import com.lark.oapi.Client;
+import com.lark.oapi.service.im.v1.enums.CreateMessageReceiveIdTypeEnum;
 import com.lark.oapi.service.im.v1.model.*;
+import com.zjs.feishubot.util.FeiShuUtil;
 import com.zjs.feishubot.util.MessageCard;
 import com.zjs.feishubot.util.MessageContent;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +21,10 @@ import java.util.UUID;
  */
 public class MessageService {
   protected final Client client;
+  protected final FeiShuUtil feiShuUtil;
 
 
   private CreateMessageReq createMessageReq(String receiveIdType, String receiveId, String msgType, String content) {
-
     return CreateMessageReq.newBuilder()
       .receiveIdType(receiveIdType)
       .createMessageReqBody(CreateMessageReqBody.newBuilder()
@@ -55,6 +57,15 @@ public class MessageService {
     return getCreateMessageResp(req);
   }
 
+  public CreateMessageResp sendTextMessageByOpenId(String openId, String text) throws Exception {
+    CreateMessageReq req = createMessageReq(CreateMessageReceiveIdTypeEnum.OPEN_ID.getValue(), openId, "text", MessageContent.ofText(text));
+    return getCreateMessageResp(req);
+  }
+
+  public CreateMessageResp sendTextAdminMessage(String text) throws Exception {
+    return sendTextMessageByOpenId(feiShuUtil.getAdminUser().getOpenId(), text);
+  }
+
   private CreateMessageResp getCreateMessageResp(CreateMessageReq req) throws Exception {
     CreateMessageResp resp;
     resp = client.im().message().create(req);
@@ -66,9 +77,10 @@ public class MessageService {
     return resp;
   }
 
+
+
   /**
    * 发送卡片消息
-   *
    */
   public CreateMessageResp sendCardMessage(String chatId, String text) throws Exception {
     CreateMessageReq messageReq = createMessageReq("chat_id", chatId, "interactive", text);
@@ -77,7 +89,6 @@ public class MessageService {
 
   /**
    * 发送用户ChatGpt回复消息卡片的消息
-   *
    */
   public CreateMessageResp sendGptAnswerMessage(String chatId, String title, String answer) throws Exception {
     log.debug("发送回复消息，长度为：{}", answer.length());
@@ -90,7 +101,6 @@ public class MessageService {
 
   /**
    * 修改类型为消息卡片的消息
-   *
    */
   public PatchMessageResp modifyMessageCard(String messageId, String content) throws Exception {
     PatchMessageReq req = createPatchMessageReq(messageId, content);
@@ -101,7 +111,7 @@ public class MessageService {
    * 修改用于ChatGpt回复的消息卡片的消息
    */
   public PatchMessageResp modifyGptAnswerMessageCard(String messageId, String title, String answer) throws Exception {
-    log.debug("修改卡片消息，长度为:{}",answer.length());
+    log.debug("修改卡片消息，长度为:{}", answer.length());
     return modifyMessageCard(messageId, MessageCard.ofGptAnswerMessageCard(title, answer));
   }
 
