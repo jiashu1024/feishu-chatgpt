@@ -6,6 +6,7 @@ import com.lark.oapi.service.contact.v3.model.User;
 import com.lark.oapi.service.im.v1.model.*;
 import com.zjs.feishubot.entity.Record;
 import com.zjs.feishubot.entity.*;
+import com.zjs.feishubot.entity.Record;
 import com.zjs.feishubot.entity.gpt.Answer;
 import com.zjs.feishubot.entity.gpt.ErrorCode;
 import com.zjs.feishubot.entity.gpt.Models;
@@ -446,7 +447,6 @@ public class MessageHandler {
         //如果是 Fast 模式，需要重试
         if (conversationConfig.getMode() == Mode.FAST) {
           messageService.sendTextMessageByChatId(chatId, "当前账号繁忙，正在为你切换账号...");
-          //  messageService.modifyGptAnswerMessageCardWithSelection(messageId, title, "当前账号繁忙，正在为你切换账号...", selections);
           //重新处理该 event，删除去重记录
           retry(account, chatId, event, messageId, record);
           return;

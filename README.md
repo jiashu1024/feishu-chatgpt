@@ -1,6 +1,5 @@
 # 飞书ChatGPT机器人
 
- 一个集成ChatGPT的飞书机器人。做该项目的意图是和女朋友共享我的一些chatgpt账号，在移动端和电脑端不科学上网也能使用chatgpt服务。
 
  该项目使用accesstoken方式，无需花费apikey额度，只要有chatgpt账号就能使用。
 

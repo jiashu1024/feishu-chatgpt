@@ -118,4 +118,7 @@ sudo docker-compose logs -f
 ![image-20231016164613538](./assets/image-20231016164613538.png)
 
 如果觉得部署太麻烦，也可以进群私聊群主申请加入企业，直接使用我部署好的机器人。
+<<<<<<< HEAD
 
+=======
+>>>>>>> 19fce2ce947d5ff7b4261d89ddc7bbbb3ba0c7c0
