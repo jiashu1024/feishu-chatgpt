@@ -1,4 +1,4 @@
-# 飞书ChatGPT机器人
+# 飞书ChatGPT机器人(因为逆向问题，项目已经无法使用，停止更新)
 
 
  该项目使用accesstoken方式，无需花费apikey额度，只要有chatgpt账号就能使用。
