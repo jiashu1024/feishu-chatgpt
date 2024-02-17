@@ -37,5 +37,3 @@ https://github.com/1130600015/feishu-chatgpt/assets/67859663/b468f721-12cc-4e40-
 ## 联系方式
 
 qq:1130600015
-
-qq群: 247738908
